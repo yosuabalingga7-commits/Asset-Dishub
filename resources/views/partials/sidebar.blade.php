@@ -1,8 +1,12 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
-<aside class="w-64 bg-slate-900 text-white flex flex-col h-screen border-r border-white/5" style="font-family: 'Inter', sans-serif;">
+<aside 
+    @toggle-sidebar.window="sidebarOpen = !sidebarOpen"
+    :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
+    class="fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white flex flex-col h-screen border-r border-white/5 transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0" 
+    style="font-family: 'Inter', sans-serif;">
     
-    <div class="p-6 mb-2">
+    <div class="p-6 mb-2 flex items-center justify-between">
         <div class="flex items-center gap-3">
             <div class="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-500/20">
                 <span class="text-white font-black text-xs">DB</span>
@@ -12,6 +16,12 @@
                 <span class="text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em] mt-1">Smart City GIS</span>
             </div>
         </div>
+        {{-- Tombol Close khusus Mobile --}}
+        <button @click="sidebarOpen = false" class="lg:hidden text-slate-400 hover:text-white transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
     </div>
 
     <nav class="flex-1 px-4 overflow-y-auto custom-scrollbar">

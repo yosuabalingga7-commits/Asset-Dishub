@@ -26,6 +26,7 @@
         
         body { font-family: 'Inter', sans-serif; }
         
+        /* Pencegahan elemen Alpine muncul sebelum load */
         [x-cloak] { display: none !important; }
 
         /* Custom scrollbar khusus untuk area konten */
@@ -46,30 +47,45 @@
 
     @stack('styles')
 </head>
-<body class="bg-slate-100">
+<body class="bg-slate-100" x-data="{ sidebarOpen: false }">
 
-{{-- Container utama menggunakan h-screen dan overflow-hidden agar sidebar tidak ikut scroll --}}
-<div class="flex h-screen overflow-hidden">
+{{-- Container utama --}}
+<div class="flex h-screen overflow-hidden bg-slate-100">
     
-    {{-- Sidebar - Tetap di kiri, tidak ikut scroll --}}
+    {{-- 
+        Sidebar
+        Sekarang sidebarOpen diatur dari body, 
+        pastikan file sidebar.blade.php menggunakan x-show atau class binding berdasarkan 'sidebarOpen'
+    --}}
     @include('partials.sidebar')
 
     {{-- Pembungkus area kanan --}}
-    <div class="flex-1 flex flex-col h-full min-w-0 overflow-hidden">
+    <div class="flex-1 flex flex-col h-full min-w-0 overflow-hidden relative">
         
-        {{-- Navbar - Tetap di atas, tidak ikut scroll --}}
+        {{-- Navbar --}}
         @include('partials.navbar')
 
-        {{-- Main Content - HANYA bagian ini yang bisa di-scroll --}}
-        {{-- class flex-1 dan overflow-y-auto adalah kunci agar form bisa scroll tanpa menarik sidebar --}}
+        {{-- Main Content --}}
         <main class="flex-1 relative overflow-y-auto bg-slate-100 p-0 custom-scrollbar">
             @yield('content')
         </main>
+
+        {{-- Overlay untuk Mobile saat Sidebar terbuka --}}
+        <div 
+            x-show="sidebarOpen" 
+            @click="sidebarOpen = false" 
+            class="fixed inset-0 bg-black/50 z-[40] lg:hidden"
+            x-transition:enter="transition opacity-0 duration-300"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="transition opacity-100 duration-300"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0">
+        </div>
     </div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
 {{-- Tambahan script untuk Marker Cluster --}}
 <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
 

@@ -11,21 +11,27 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Tabel Utama Users
+        // Tabel Utama Users - LINTAS System (Fresh Update)
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('name');
+            $table->string('username')->unique(); // Login bisa pakai username/NIP
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             
-            // Kolom Tambahan untuk Role & Status
-            // admin: Full Akses, petugas: Input Lapangan, dinas: Monitoring Saja, seksi: Kepala Seksi
-            $table->enum('role', ['admin', 'petugas', 'dinas', 'seksi'])->default('petugas');
+            /** * ROLE MANAGEMENT
+             * super_admin: Manajemen penuh aset, validasi, & buat tiket.
+             * seksi: Monitoring & eksekusi tiket per bidang.
+             * petugas: Surveyor lapangan / input aset.
+             */
+            $table->enum('role', ['super_admin', 'seksi', 'petugas'])->default('petugas');
             
-            // Kolom untuk menyimpan nomor WhatsApp (Penting untuk fitur kirim tugas via WA)
-            $table->string('no_wa')->nullable();
+            // Integrasi WhatsApp (Penting untuk bot notifikasi)
+            $table->string('no_wa')->unique()->nullable(); 
             
+            // Profil & Status (Sesuai Controller: pakai nama 'foto')
+            $table->string('foto')->nullable(); 
             $table->boolean('is_active')->default(true);
 
             $table->rememberToken();
@@ -39,7 +45,7 @@ return new class extends Migration
             $table->timestamp('created_at')->nullable();
         });
 
-        // Tabel Sesi Login (Sangat berguna untuk keamanan dashboard)
+        // Tabel Sesi Login
         Schema::create('sessions', function (Blueprint $table) {
             $table->string('id')->primary();
             $table->foreignId('user_id')->nullable()->index();

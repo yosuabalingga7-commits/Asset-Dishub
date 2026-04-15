@@ -20,13 +20,13 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
+        'username',   // Login via Username/NIP
         'email',
         'password',
-        'nip',        // Menambahkan kolom NIP
-        'no_wa',      // Menambahkan kolom Nomor WA
-        'foto',       // Menambahkan kolom Path Foto
-        'role',       // Menambahkan kolom Role (admin/petugas/dinas)
-        'is_active',  // Menambahkan status aktif
+        'no_wa',      // Penting untuk Bot WA
+        'foto',       // SUDAH DIUPDATE: Sinkron dengan migration dan controller
+        'role',       // super_admin, seksi, petugas
+        'is_active',
     ];
 
     /**
@@ -49,8 +49,27 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-            'is_active' => 'boolean', // Cast status aktif ke boolean
+            'is_active' => 'boolean',
         ];
+    }
+
+    /** * HELPER FUNCTIONS UNTUK ROLE
+     * Digunakan di Controller atau Blade: if(Auth::user()->isSuperAdmin())
+     */
+    
+    public function isSuperAdmin(): bool
+    {
+        return $this->role === 'super_admin';
+    }
+
+    public function isSeksi(): bool
+    {
+        return $this->role === 'seksi';
+    }
+
+    public function isPetugas(): bool
+    {
+        return $this->role === 'petugas';
     }
 
     /**

@@ -37,6 +37,15 @@
         margin-bottom: 24px !important;
     }
 
+    /* Penyesuaian Kontrol Map di Mobile agar tidak tertutup panel */
+    @media (max-width: 768px) {
+        .leaflet-bottom.leaflet-right {
+            margin-bottom: 110px !important;
+            margin-right: 10px !important;
+            scale: 0.85;
+        }
+    }
+
     /* CUSTOM STYLE UNTUK LAYER CONTROL */
     .leaflet-control-layers {
         border: none !important;
@@ -96,7 +105,7 @@
 
     .custom-div-icon { background: none; border: none; }
     
-    #map { background: #f8fafc !important; }
+    #map { background: #f8fafc !important; min-height: 400px; }
 
     .font-black {
         font-weight: 900 !important;
@@ -178,6 +187,9 @@
         margin: 0 !important;
         width: 280px !important;
     }
+    @media (max-width: 768px) {
+        .leaflet-popup-content { width: 240px !important; }
+    }
     .leaflet-popup-tip-container {
         display: block !important;
     }
@@ -188,139 +200,143 @@
     }
 </style>
 
-{{-- SISI KIRI: SEARCH & MONITORING FILTER --}}
-<div class="absolute top-4 left-4 z-[1000] w-80 flex flex-col gap-3">
-    {{-- SEARCH BOX --}}
-    <div class="bg-white rounded-xl shadow-xl border-none p-2">
-        <div class="relative flex items-center">
-            <div class="absolute left-2.5">
-                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                </svg>
-            </div>
-            <input type="text" id="searchInput" placeholder="Cari Aset atau Wilayah..." 
-                class="w-full pl-9 pr-12 py-2 bg-gray-100 border-none rounded-lg text-xs focus:ring-2 focus:ring-indigo-500">
-            <button onclick="triggerSearch()" class="absolute right-1.5 bg-indigo-600 hover:bg-indigo-700 text-white p-1.5 rounded-md transition-colors shadow-sm">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                </svg>
-            </button>
-        </div>
-    </div>
+<div class="relative flex flex-col md:block h-screen w-full overflow-hidden bg-gray-100">
 
-    {{-- MONITORING PANEL --}}
-    <div class="bg-white rounded-2xl shadow-xl border-none overflow-hidden flex flex-col transition-all duration-300">
-        <div id="btnToggleList" class="bg-indigo-700 p-4 text-white cursor-pointer hover:bg-indigo-800 transition-all flex justify-between items-center">
-            <div>
-                <div id="statLabel" class="text-[10px] font-bold uppercase tracking-widest opacity-80 text-white/80">Total Seluruh Aset</div>
-                <div id="statTotalGlobal" class="text-3xl font-black mt-1">{{ $total_aset }}</div>
-            </div>
-            <div id="arrowIcon" class="transition-transform duration-300">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7" /></svg>
-            </div>
-        </div>
-        
-        <div id="assetListContainer" class="max-h-0 overflow-hidden transition-all duration-500 bg-gray-50">
-            {{-- Breadcrumb --}}
-            <div id="listBreadcrumb" class="hidden p-3 bg-indigo-50 border-b border-indigo-100 flex items-center gap-3 cursor-pointer hover:bg-indigo-100" onclick="resetToCategories()">
-                <div class="bg-indigo-600 text-white rounded-full p-1"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M15 19l-7-7 7-7" /></svg></div>
-                <div class="flex flex-col">
-                    <span class="text-[9px] text-indigo-400 font-bold uppercase leading-none">Kembali</span>
-                    <span id="currentCategoryTitle" class="text-[11px] font-black text-indigo-800 uppercase truncate">Kategori</span>
+    {{-- SISI KIRI: SEARCH & MONITORING FILTER --}}
+    <div class="relative md:absolute top-0 md:top-4 left-0 md:left-4 z-[1001] w-full md:w-80 flex flex-col gap-3 p-4 md:p-0">
+        {{-- SEARCH BOX --}}
+        <div class="bg-white rounded-xl shadow-xl border-none p-2">
+            <div class="relative flex items-center">
+                <div class="absolute left-2.5">
+                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
                 </div>
+                <input type="text" id="searchInput" placeholder="Cari Aset atau Wilayah..." 
+                    class="w-full pl-9 pr-12 py-2 bg-gray-100 border-none rounded-lg text-xs focus:ring-2 focus:ring-indigo-500">
+                <button onclick="triggerSearch()" class="absolute right-1.5 bg-indigo-600 hover:bg-indigo-700 text-white p-1.5 rounded-md transition-colors shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                    </svg>
+                </button>
             </div>
+        </div>
 
-            <div id="listContent" class="p-2 space-y-1 max-h-[300px] overflow-y-auto">
-                {{-- Content --}}
+        {{-- MONITORING PANEL --}}
+        <div class="bg-white rounded-2xl shadow-xl border-none overflow-hidden flex flex-col transition-all duration-300">
+            <div id="btnToggleList" class="bg-indigo-700 p-4 text-white cursor-pointer hover:bg-indigo-800 transition-all flex justify-between items-center">
+                <div>
+                    <div id="statLabel" class="text-[10px] font-bold uppercase tracking-widest opacity-80 text-white/80">Total Seluruh Aset</div>
+                    <div id="statTotalGlobal" class="text-3xl font-black mt-1">{{ $total_aset }}</div>
+                </div>
+                <div id="arrowIcon" class="transition-transform duration-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7" /></svg>
+                </div>
             </div>
             
-            <div class="flex flex-col">
-                {{-- TOMBOL EXPORT GRUP --}}
-                <div class="grid grid-cols-2">
-                    <a href="{{ route('assets.pdf') }}" class="btn-pdf-custom" style="border-radius: 0 0 0 16px;">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
-                        PDF
-                    </a>
-                    <a href="{{ route('assets.export') }}" class="btn-excel-custom" style="border-radius: 0 0 16px 0;">
-                        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16h-8v-2h8v2zm0-4h-8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
-                        EXCEL
-                    </a>
+            <div id="assetListContainer" class="max-h-0 overflow-hidden transition-all duration-500 bg-gray-50">
+                {{-- Breadcrumb --}}
+                <div id="listBreadcrumb" class="hidden p-3 bg-indigo-50 border-b border-indigo-100 flex items-center gap-3 cursor-pointer hover:bg-indigo-100" onclick="resetToCategories()">
+                    <div class="bg-indigo-600 text-white rounded-full p-1"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M15 19l-7-7 7-7" /></svg></div>
+                    <div class="flex flex-col">
+                        <span class="text-[9px] text-indigo-400 font-bold uppercase leading-none">Kembali</span>
+                        <span id="currentCategoryTitle" class="text-[11px] font-black text-indigo-800 uppercase truncate">Kategori</span>
+                    </div>
+                </div>
+
+                <div id="listContent" class="p-2 space-y-1 max-h-[250px] md:max-h-[300px] overflow-y-auto">
+                    {{-- Content --}}
+                </div>
+                
+                <div class="flex flex-col">
+                    {{-- TOMBOL EXPORT GRUP --}}
+                    <div class="grid grid-cols-2">
+                        <a href="{{ route('assets.pdf') }}" class="btn-pdf-custom" style="border-radius: 0 0 0 16px;">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                            PDF
+                        </a>
+                        <a href="{{ route('assets.export') }}" class="btn-excel-custom" style="border-radius: 0 0 16px 0;">
+                            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16h-8v-2h8v2zm0-4h-8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+                            EXCEL
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- STATUS FILTER PANEL --}}
+        <div class="bg-white rounded-2xl shadow-lg border-none p-4">
+            <div class="flex justify-between items-center mb-3">
+                <span id="statusFilterTitle" class="text-[10px] font-black uppercase text-gray-400 tracking-wider">Kondisi Seluruh Aset</span>
+            </div>
+            <div class="grid grid-cols-2 gap-2 md:grid-cols-2 overflow-x-auto pb-1">
+                <div onclick="filterByStatus('Baik')" id="btnStatBaik" class="min-w-[100px] group flex justify-between items-center text-[10px] font-bold p-2 bg-gray-50 rounded-lg cursor-pointer hover:bg-green-50 transition-all">
+                    <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-green-500"></span><span class="text-gray-600 uppercase">Baik</span></div>
+                    <span id="statBaik" class="text-gray-900 font-black">0</span>
+                </div>
+                <div onclick="filterByStatus('Rusak')" id="btnStatRusak" class="min-w-[100px] group flex justify-between items-center text-[10px] font-bold p-2 bg-gray-50 rounded-lg cursor-pointer hover:bg-orange-50 transition-all">
+                    <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-orange-400"></span><span class="text-gray-600 uppercase">Rusak</span></div>
+                    <span id="statRusak" class="text-gray-900 font-black">0</span>
+                </div>
+                <div onclick="filterByStatus('Kritis')" id="btnStatKritis" class="min-w-[100px] group flex justify-between items-center text-[10px] font-bold p-2 bg-gray-50 rounded-lg cursor-pointer hover:bg-red-50 transition-all">
+                    <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-red-600"></span><span class="text-gray-600 uppercase">Kritis</span></div>
+                    <span id="statKritis" class="text-gray-900 font-black">0</span>
+                </div>
+                <div onclick="filterByStatus('Proses Perbaikan')" id="btnStatProses" class="min-w-[100px] group flex justify-between items-center text-[10px] font-bold p-2 bg-gray-50 rounded-lg cursor-pointer hover:bg-blue-50 transition-all">
+                    <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-blue-500"></span><span class="text-gray-600 uppercase">Proses</span></div>
+                    <span id="statProses" class="text-gray-900 font-black">0</span>
                 </div>
             </div>
         </div>
     </div>
 
-    {{-- STATUS FILTER PANEL --}}
-    <div class="bg-white rounded-2xl shadow-lg border-none p-4">
-        <div class="flex justify-between items-center mb-3">
-            <span id="statusFilterTitle" class="text-[10px] font-black uppercase text-gray-400 tracking-wider">Kondisi Seluruh Aset</span>
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-            <div onclick="filterByStatus('Baik')" id="btnStatBaik" class="group flex justify-between items-center text-[10px] font-bold p-2 bg-gray-50 rounded-lg cursor-pointer hover:bg-green-50 transition-all">
-                <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-green-500"></span><span class="text-gray-600 uppercase">Baik</span></div>
-                <span id="statBaik" class="text-gray-900 font-black">0</span>
-            </div>
-            <div onclick="filterByStatus('Rusak')" id="btnStatRusak" class="group flex justify-between items-center text-[10px] font-bold p-2 bg-gray-50 rounded-lg cursor-pointer hover:bg-orange-50 transition-all">
-                <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-orange-400"></span><span class="text-gray-600 uppercase">Rusak</span></div>
-                <span id="statRusak" class="text-gray-900 font-black">0</span>
-            </div>
-            <div onclick="filterByStatus('Kritis')" id="btnStatKritis" class="group flex justify-between items-center text-[10px] font-bold p-2 bg-gray-50 rounded-lg cursor-pointer hover:bg-red-50 transition-all">
-                <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-red-600"></span><span class="text-gray-600 uppercase">Kritis</span></div>
-                <span id="statKritis" class="text-gray-900 font-black">0</span>
-            </div>
-            <div onclick="filterByStatus('Proses Perbaikan')" id="btnStatProses" class="group flex justify-between items-center text-[10px] font-bold p-2 bg-gray-50 rounded-lg cursor-pointer hover:bg-blue-50 transition-all">
-                <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-blue-500"></span><span class="text-gray-600 uppercase">Proses</span></div>
-                <span id="statProses" class="text-gray-900 font-black">0</span>
-            </div>
-        </div>
-    </div>
-</div>
+    {{-- MAP CONTAINER (Wajib Full Height di Background) --}}
+    <div id="map" class="absolute inset-0 z-0"></div>
 
-{{-- SISI KANAN: STATUS & RESET BUTTON --}}
-<div class="absolute top-4 right-4 z-[1000] flex flex-col gap-3 items-end">
-    {{-- TOMBOL REFRESH DASHBOARD --}}
-    <button onclick="window.location.reload()" 
-            class="bg-white p-3 rounded-xl shadow-xl border-none hover:bg-indigo-50 group transition-all" 
-            title="Refresh Halaman">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-indigo-600 group-hover:rotate-180 transition-transform duration-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-        </svg>
-    </button>
+    {{-- SISI KANAN: STATUS & RESET BUTTON --}}
+    <div class="absolute bottom-6 md:top-4 right-4 z-[1001] flex flex-col gap-3 items-end pointer-events-none">
+        {{-- TOMBOL REFRESH DASHBOARD --}}
+        <button onclick="window.location.reload()" 
+                class="bg-white p-3 rounded-xl shadow-xl border-none hover:bg-indigo-50 group transition-all pointer-events-auto" 
+                title="Refresh Halaman">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-indigo-600 group-hover:rotate-180 transition-transform duration-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+        </button>
 
-    <div class="w-72 flex flex-col gap-3">
-        <div class="bg-white rounded-2xl shadow-lg border-none p-4 flex items-center justify-between">
-            <div>
-                <span class="text-[10px] font-black uppercase text-gray-400 tracking-wider block">Laporan Pengaduan Masyarakat</span>
-                <span class="text-2xl font-black text-orange-600 leading-tight">{{ $total_laporan }}</span>
+        {{-- Statistik Ringkas (Bawah kanan di HP, Atas kanan di Desktop) --}}
+        <div class="w-72 md:w-72 flex flex-col gap-2 md:gap-3 pointer-events-auto">
+            <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border-none p-3 md:p-4 flex items-center justify-between">
+                <div>
+                    <span class="text-[8px] md:text-[10px] font-black uppercase text-gray-400 tracking-wider block leading-none mb-1">Pengaduan</span>
+                    <span class="text-lg md:text-2xl font-black text-orange-600 leading-tight">{{ $total_laporan }}</span>
+                </div>
+                <div class="bg-orange-100 p-2 md:p-2.5 rounded-xl">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 md:h-6 md:w-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77-1.333.192 3 1.732 3z" />
+                    </svg>
+                </div>
             </div>
-            <div class="bg-orange-100 p-2.5 rounded-xl">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77-1.333.192 3 1.732 3z" />
-                </svg>
-            </div>
-        </div>
 
-        <div class="bg-white rounded-2xl shadow-lg border-none p-4 flex items-center justify-between">
-            <div>
-                <span class="text-[10px] font-black uppercase text-gray-400 tracking-wider block">Petugas Aktif</span>
-                <span class="text-2xl font-black text-blue-600 leading-tight">{{ $petugas_aktif }}</span>
-            </div>
-            <div class="bg-blue-100 p-2.5 rounded-xl">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
+            <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border-none p-3 md:p-4 flex items-center justify-between">
+                <div>
+                    <span class="text-[8px] md:text-[10px] font-black uppercase text-gray-400 tracking-wider block leading-none mb-1">Petugas Aktif</span>
+                    <span class="text-lg md:text-2xl font-black text-blue-600 leading-tight">{{ $petugas_aktif }}</span>
+                </div>
+                <div class="bg-blue-100 p-2 md:p-2.5 rounded-xl">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 md:h-6 md:w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-{{-- DETAIL DASHBOARD (KITA SEMBUNYIKAN KARENA SUDAH PINDAH KE POPUP) --}}
+{{-- DETAIL DASHBOARD --}}
 <div id="detailDashboard" class="hidden"></div>
 
-<div id="map" class="w-full h-full"></div>
-
 <script src="{{ asset('js/polygon-layers.js') }}"></script>
-{{-- LOGIKA LAYER & MARKER DISINI --}}
 <script src="{{ asset('js/asset-layer-logic.js') }}?v={{ time() }}"></script>
 
 <script>
@@ -353,7 +369,7 @@
             warna: statusColors[a.status] || '#64748b',
             foto: a.foto ? `/storage/${a.foto}` : "{{ asset('img/generic.png') }}",
             icon: a.icon_marker || '📍',
-            edit_url: `/assets/${a.id}/edit` // Asumsi URL Edit
+            edit_url: `/assets/${a.id}/edit`
         }));
 
         let currentKat = 'all';
@@ -371,7 +387,6 @@
             initPolygonLayers(map);
         }
 
-        // Layer-layer peta
         const lightGroup = L.tileLayer(MAP_SETTINGS.lightMap, { maxZoom: 20 }).addTo(map);
         const darkGroup = L.tileLayer(MAP_SETTINGS.darkMap, { maxZoom: 20 });
         const googleRoadmap = L.tileLayer(MAP_SETTINGS.googleRoadmap, { maxZoom: 20 });
@@ -392,7 +407,6 @@
             resetMapView();
         });
 
-        // Kontrol Layer dengan 4 Opsi
         const baseMaps = {
             "<span class='text-[11px] font-bold uppercase'>⚪ Light Mode</span>": lightGroup,
             "<span class='text-[11px] font-bold uppercase'>🌑 Dark Mode</span>": darkGroup,
@@ -453,7 +467,6 @@
                             icon: createMarkerIcon(aset.kategori, aset.warna, aset.icon) 
                         });
 
-                        // UPDATE: TEMPLATE DETAIL DALAM POPUP (SESUAI GAMBAR BOS)
                         const popupContent = `
                             <div class="bg-white overflow-hidden shadow-2xl">
                                 <div class="relative h-32 bg-gray-200">
@@ -503,8 +516,6 @@
             document.getElementById('statKritis').innerText = stats.kritis;
             document.getElementById('statProses').innerText = stats.proses;
         };
-
-        // Fungsi showDetail dihapus karena logic sudah pindah ke marker.bindPopup
 
         function renderCategories() {
             const container = document.getElementById('listContent');

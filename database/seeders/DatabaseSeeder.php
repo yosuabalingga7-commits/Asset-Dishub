@@ -13,26 +13,27 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // 1. Membuat User Admin agar bisa Login
-        // Menggunakan updateOrCreate agar tidak double kalau dijalankan berkali-kali
+        // 1. Membuat User Admin Utama (Akun Ketua)
+        // Login: admin / password
         User::updateOrCreate(
-            ['email' => 'admin@example.com'],
+            ['username' => 'admin'], // Kunci unik agar tidak double
             [
-                'name' => 'Admin Dishub KBB',
+                'name' => 'Admin Utama LINTAS',
+                'email' => 'admin@kbb.go.id',
                 'password' => Hash::make('password'), 
-                'role' => 'admin', 
+                'role' => 'super_admin',
+                'no_wa' => '08123456789',
+                'foto' => null,
+                'is_active' => true,
             ]
         );
 
-        // 2. Memanggil Seeder lainnya
-        // CATATAN: Pastikan filenya SUDAH ADA di folder seeders sebelum diaktifkan
+        // 2. Memanggil Seeder lainnya untuk data tambahan
         $this->call([
-            UserSeeder::class, // Ini tadi sudah ada filenya, jadi AMAN
-            
-            // Hapus tanda // di bawah ini HANYA JIKA filenya sudah kamu buat:
-            // CategorySeeder::class, 
-            // AssetSeeder::class, 
-            // MaintenanceSeeder::class, 
+            UserSeeder::class, 
+            // Tambahkan seeder lain di bawah sini jika sudah ada filenya:
+            // CategorySeeder::class,
+            // AssetSeeder::class,
         ]);
     }
 }
