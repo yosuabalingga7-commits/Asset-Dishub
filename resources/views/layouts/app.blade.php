@@ -3,78 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dishub KBB - Pemetaan Aset</title>
+    <title>LINTAS | Layanan Inventaris & Tata Aset Sistem - Dishub KBB</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
-    {{-- Tambahan library untuk Marker Cluster --}}
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
     
     <style>
-        /* Mengunci body agar tidak bisa scroll secara keseluruhan */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+
         html, body { 
             height: 100%; 
             margin: 0; 
             padding: 0; 
-            overflow: hidden; 
+            scroll-behavior: smooth;
         }
         
-        #map { height: 100%; width: 100%; }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            font-smoothing: antialiased;
+        }
         
-        body { font-family: 'Inter', sans-serif; }
-        
-        /* Pencegahan elemen Alpine muncul sebelum load */
         [x-cloak] { display: none !important; }
 
-        /* Custom scrollbar khusus untuk area konten */
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 8px;
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #0f172a; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { 
+            background: #334155; 
+            border-radius: 10px; 
         }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: #f1f1f1;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
-        }
+
+        .map-mode { overflow: hidden !important; }
     </style>
 
     @stack('styles')
 </head>
-<body class="bg-slate-100" x-data="{ sidebarOpen: false }">
+<body class="bg-slate-950" x-data="{ sidebarOpen: false }">
 
-{{-- Container utama --}}
-<div class="flex h-screen overflow-hidden bg-slate-100">
+<div class="flex h-screen overflow-hidden bg-slate-950">
     
-    {{-- 
-        Sidebar
-        Sekarang sidebarOpen diatur dari body, 
-        pastikan file sidebar.blade.php menggunakan x-show atau class binding berdasarkan 'sidebarOpen'
-    --}}
-    @include('partials.sidebar')
+    {{-- Sidebar Container --}}
+    <div 
+        :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
+        class="fixed inset-y-0 left-0 z-[1060] w-64 transition-transform duration-300 transform lg:static lg:inset-0 bg-slate-900 shadow-2xl">
+        @include('partials.sidebar')
+    </div>
 
-    {{-- Pembungkus area kanan --}}
+    {{-- Main Wrapper --}}
     <div class="flex-1 flex flex-col h-full min-w-0 overflow-hidden relative">
         
         {{-- Navbar --}}
         @include('partials.navbar')
 
-        {{-- Main Content --}}
-        <main class="flex-1 relative overflow-y-auto bg-slate-100 p-0 custom-scrollbar">
+        {{-- Content Area --}}
+        <main class="flex-1 relative overflow-y-auto bg-slate-950 p-0 custom-scrollbar text-white">
             @yield('content')
         </main>
 
-        {{-- Overlay untuk Mobile saat Sidebar terbuka --}}
+        {{-- Mobile Overlay --}}
         <div 
             x-show="sidebarOpen" 
             @click="sidebarOpen = false" 
-            class="fixed inset-0 bg-black/50 z-[40] lg:hidden"
+            class="fixed inset-0 bg-black/70 z-[1055] lg:hidden backdrop-blur-sm"
             x-transition:enter="transition opacity-0 duration-300"
             x-transition:enter-start="opacity-0"
             x-transition:enter-end="opacity-100"
@@ -86,10 +79,8 @@
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-{{-- Tambahan script untuk Marker Cluster --}}
 <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
 
 @stack('scripts')
-
 </body>
 </html>

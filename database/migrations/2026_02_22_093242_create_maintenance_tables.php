@@ -17,6 +17,9 @@ return new class extends Migration
             $table->string('ticket_code')->unique(); // Contoh: MNT-001
             $table->string('category')->default('dishub'); // dishub atau umum
             
+            // --- KOLOM BARU UNTUK RELASI SEKSI (PENERIMA TUGAS) ---
+            $table->foreignId('seksi_id')->nullable()->constrained('users')->onDelete('cascade');
+
             // Kolom tambahan agar sinkron dengan Model & Controller (SANGAT PENTING)
             $table->string('kepemilikan')->nullable(); // Menentukan sumber aset
             $table->string('subject')->nullable(); // Judul perbaikan

@@ -2,37 +2,35 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
 
     /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
+     * Atribut yang dapat diisi secara massal.
      */
     protected $fillable = [
         'name',
-        'username',   // Login via Username/NIP
+        'nip',        // Login via NIP (Unique)
         'email',
         'password',
-        'no_wa',      // Penting untuk Bot WA
-        'foto',       // SUDAH DIUPDATE: Sinkron dengan migration dan controller
-        'role',       // super_admin, seksi, petugas
+        'password_plain', // TAMBAHKAN INI
+        'no_wa',      // Digunakan untuk Bot WhatsApp
+        'foto',        
+        'role',       // super_admin, seksi
+        'seksi_id',   // ID Seksi untuk pembagian tugas
+        'status',     // TAMBAHKAN INI AGAR BISA DISIMPAN
         'is_active',
     ];
 
     /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
+     * Atribut yang disembunyikan saat serialisasi.
      */
     protected $hidden = [
         'password',
@@ -40,9 +38,7 @@ class User extends Authenticatable
     ];
 
     /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
+     * Casting atribut ke tipe data tertentu.
      */
     protected function casts(): array
     {
@@ -50,13 +46,12 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_active' => 'boolean',
+            'seksi_id' => 'integer',
         ];
     }
 
-    /** * HELPER FUNCTIONS UNTUK ROLE
-     * Digunakan di Controller atau Blade: if(Auth::user()->isSuperAdmin())
-     */
-    
+    // --- HELPER FUNCTIONS UNTUK ROLE ---
+
     public function isSuperAdmin(): bool
     {
         return $this->role === 'super_admin';
@@ -67,23 +62,24 @@ class User extends Authenticatable
         return $this->role === 'seksi';
     }
 
-    public function isPetugas(): bool
+    /**
+     * Relasi ke model Seksi (Bidang)
+     */
+    public function seksi(): BelongsTo
     {
-        return $this->role === 'petugas';
+        return $this->belongsTo(Seksi::class, 'seksi_id');
     }
 
     /**
-     * Relasi ke Tiket (One-to-Many)
-     * Menampilkan daftar tiket yang ditugaskan kepada user/petugas ini.
+     * Relasi ke Tiket Maintenance
      */
-    public function assignedTickets(): HasMany
+    public function maintenanceTickets(): HasMany
     {
-        return $this->hasMany(Ticket::class, 'assigned_to');
+        return $this->hasMany(MaintenanceTicket::class, 'user_id');
     }
 
     /**
      * Relasi ke Task Logs
-     * Menampilkan riwayat aktivitas/catatan yang pernah dibuat oleh user ini.
      */
     public function logs(): HasMany
     {

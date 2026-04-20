@@ -11,27 +11,31 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Tabel Utama Users - LINTAS System (Fresh Update)
+        // Tabel Utama Users - Update: Penambahan kolom status & password_plain
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('username')->unique(); // Login bisa pakai username/NIP
+            $table->string('nip')->unique(); // Login menggunakan NIP
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->string('password_plain')->nullable(); // UNTUK ADMIN MELIHAT PASSWORD ASLI
             
             /** * ROLE MANAGEMENT
-             * super_admin: Manajemen penuh aset, validasi, & buat tiket.
-             * seksi: Monitoring & eksekusi tiket per bidang.
-             * petugas: Surveyor lapangan / input aset.
+             * super_admin: Manajemen penuh aset & buat tiket/tugas.
+             * seksi: Monitoring & eksekusi tugas per bidang.
              */
-            $table->enum('role', ['super_admin', 'seksi', 'petugas'])->default('petugas');
+            $table->enum('role', ['super_admin', 'seksi'])->default('seksi');
             
-            // Integrasi WhatsApp (Penting untuk bot notifikasi)
+            // --- IDENTITAS SEKSI (WAJIB UNTUK PEMBAGIAN TUGAS) ---
+            $table->unsignedBigInteger('seksi_id')->nullable(); 
+
+            // Integrasi WhatsApp untuk bot notifikasi tugas
             $table->string('no_wa')->unique()->nullable(); 
             
-            // Profil & Status (Sesuai Controller: pakai nama 'foto')
+            // Profil & Status
             $table->string('foto')->nullable(); 
+            $table->string('status')->default('aktif'); // KOLOM BARU: Untuk indikator warna di tabel (Aktif/Nonaktif)
             $table->boolean('is_active')->default(true);
 
             $table->rememberToken();

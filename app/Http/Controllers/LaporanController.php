@@ -5,14 +5,42 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Asset;  
 use App\Models\LaporanMasyarakat; // Ini yang utama kita pakai
-use Illuminate\Support\Str;        
+use Illuminate\Support\Str;          
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Http; // WAJIB ADA UNTUK KIRIM WA
 
 class LaporanController extends Controller
 {
     /**
-     * Tampilan Form untuk Masyarakat (User Umum)
+     * --- TAMBAHAN UNTUK LANDING PAGE LINTAS ---
+     * Menampilkan Halaman Depan Utama
+     */
+    public function indexLanding()
+    {
+        return view('landing.index');
+    }
+
+    /**
+     * --- TAMBAHAN UNTUK FORM PUBLIK ---
+     * Menampilkan Form untuk Masyarakat (User Umum)
+     */
+    public function createPublic()
+    {
+        $assets = Asset::all();
+        return view('masyarakat.lapor', compact('assets'));
+    }
+
+    /**
+     * --- TAMBAHAN UNTUK PROSES SIMPAN PUBLIK ---
+     * Memproses simpan dari form landing page (menggunakan method store yang sudah ada)
+     */
+    public function storePublic(Request $request)
+    {
+        return $this->store($request);
+    }
+
+    /**
+     * Tampilan Form untuk Masyarakat (User Umum) - Method Lama
      */
     public function index()
     {
@@ -66,8 +94,9 @@ class LaporanController extends Controller
             ]);
 
             // --- BAGIAN TAMBAHAN: KIRIM NOTIFIKASI WHATSAPP KE ADMIN ---
+            // Dibungkus Try-Catch agar jika server Node.js mati, laporan tetap tersimpan di DB
             try {
-                $nomorAdmin = '088905298517'; // <-- GANTI DENGAN NOMOR WA Dengan No Wa ADMIN
+                $nomorAdmin = '088905298517'; // <-- NOMOR WA ADMIN KBB
                 
                 $pesan = "📢 *LAPORAN MASYARAKAT BARU*\n\n"
                        . "🆔 *Tiket:* " . $ticketNumber . "\n"
@@ -78,15 +107,21 @@ class LaporanController extends Controller
                        . "Cek detail di Dashboard Admin KBB Smart Asset.";
 
                 // Mengirim perintah ke Node.js di Port 3000
-                Http::timeout(5)->post('http://localhost:3000/send-message', [
+                // Timeout dipersingkat ke 3 detik agar user tidak menunggu lama jika server WA down
+                Http::timeout(3)->connectTimeout(3)->post('http://localhost:3000/send-message', [
                     'phone' => $nomorAdmin,
                     'message' => $pesan,
                 ]);
             } catch (\Exception $waEx) {
                 // Jika WA error, log saja agar aplikasi tidak berhenti (user tetap sukses lapor)
-                \Log::error("Gagal Kirim WA: " . $waEx->getMessage());
+                \Log::error("Gagal Kirim Notifikasi WA (Server Down/Timeout): " . $waEx->getMessage());
             }
             // --- AKHIR BAGIAN TAMBAHAN ---
+
+            // Redirect ke Landing Page dengan pesan sukses jika dari publik
+            if ($request->is('lapor-kerusakan/*')) {
+                return redirect()->route('landing')->with('success', 'Laporan berhasil dikirim! Tiket: ' . $ticketNumber);
+            }
 
             return back()->with('success', 'Laporan berhasil dikirim! Simpan Nomor Tiket Anda: ' . $ticketNumber);
 

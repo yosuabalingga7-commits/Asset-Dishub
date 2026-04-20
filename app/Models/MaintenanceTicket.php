@@ -15,13 +15,13 @@ class MaintenanceTicket extends Model
 
     /**
      * Kolom yang boleh diisi secara massal (Mass Assignment)
-     * Ditambahkan foto_perbaikan dan completion_notes sesuai migrasi terbaru
      */
     protected $fillable = [
         'ticket_code',
         'report_id',
         'asset_id',
         'user_id',
+        'seksi_id',        // TAMBAHAN: Untuk identifikasi Seksi penerima tugas
         'category',
         'kepemilikan',
         'subject',
@@ -38,8 +38,8 @@ class MaintenanceTicket extends Model
         'deadline',
         'category_id',
         'jenis_aset',
-        'foto_perbaikan',   // Tambahan sinkronisasi migrasi
-        'completion_notes', // Tambahan sinkronisasi migrasi
+        'foto_perbaikan',   
+        'completion_notes', 
     ];
 
     /**
@@ -55,8 +55,6 @@ class MaintenanceTicket extends Model
 
     /**
      * ACCESSOR: Status Slug
-     * Memastikan status selalu konsisten untuk filter Alpine.js di frontend.
-     * Mengikuti standar: 'baik', 'proses', 'rusak', 'kritis'
      */
     public function getStatusSlugAttribute()
     {
@@ -95,13 +93,21 @@ class MaintenanceTicket extends Model
     }
 
     /**
-     * Relasi ke tabel Users (Petugas/Seksi)
+     * Relasi ke tabel Users (Admin Pembuat/Penanggung Jawab)
      */
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id')->withDefault([
             'name' => 'Belum Ditentukan'
         ]);
+    }
+
+    /**
+     * RELASI TAMBAHAN: Ke User sebagai Seksi
+     */
+    public function seksi()
+    {
+        return $this->belongsTo(User::class, 'seksi_id');
     }
 
     /**

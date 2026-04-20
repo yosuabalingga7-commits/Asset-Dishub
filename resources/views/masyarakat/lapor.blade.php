@@ -97,7 +97,7 @@
                             <input type="text" name="nama_pelapor" value="{{ old('nama_pelapor') }}" placeholder="Input nama sesuai identitas" class="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl py-4 px-6 text-sm font-bold focus:border-[#0B2A4A] focus:ring-4 focus:ring-blue-100 transition-all outline-none text-[#0B2A4A]" required>
                         </div>
                         <div class="space-y-2">
-                            <label class="text-[10px] font-black text-slate-500 uppercase ml-1 tracking-widest">WhatsApp Number</label>
+                            <label class="text-[10px] font-black text-slate-500 uppercase ml-1 tracking-widest">Nomor Wa</label>
                             <input type="text" name="kontak_pelapor" value="{{ old('kontak_pelapor') }}" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')" placeholder="08xxx" class="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl py-4 px-6 text-sm font-bold focus:border-[#0B2A4A] focus:ring-4 focus:ring-blue-100 transition-all outline-none text-[#0B2A4A]" required>
                         </div>
                     </div>

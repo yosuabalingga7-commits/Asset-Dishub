@@ -23,14 +23,14 @@ class LoginController extends Controller
      */
     public function login(Request $request): RedirectResponse
     {
-        // 1. Validasi Input
+        // 1. Validasi Input (Sekarang menggunakan nip)
         $credentials = $request->validate([
-            'username' => ['required', 'string'],
+            'nip'      => ['required', 'string'],
             'password' => ['required', 'string'],
         ]);
 
         // 2. Percobaan Login
-        // Menggunakan 'username' sesuai dengan struktur tabel user terbaru
+        // Menggunakan 'nip' sesuai dengan struktur tabel user terbaru
         if (Auth::attempt($credentials, $request->filled('remember'))) {
             $request->session()->regenerate();
 
@@ -40,7 +40,7 @@ class LoginController extends Controller
             if (!$user->is_active) {
                 Auth::logout();
                 return back()->withErrors([
-                    'username' => 'Akun Anda dinonaktifkan. Silakan hubungi Super Admin.',
+                    'nip' => 'Akun Anda dinonaktifkan. Silakan hubungi Super Admin.',
                 ]);
             }
 
@@ -51,7 +51,8 @@ class LoginController extends Controller
             } 
             
             if ($user->role === 'seksi') {
-                return redirect()->intended('/seksi/daftar-tiket')
+                // Sesuai permintaan: Masuk ke halaman tugas tersedia
+                return redirect()->intended('/admin/petugas/tugas-tersedia')
                     ->with('success', 'Selamat Bekerja, Kepala Seksi.');
             }
 
@@ -61,8 +62,8 @@ class LoginController extends Controller
 
         // 5. Jika Gagal Login
         return back()->withErrors([
-            'username' => 'Username atau password yang Anda masukkan salah.',
-        ])->onlyInput('username');
+            'nip' => 'NIP atau password yang Anda masukkan salah.',
+        ])->onlyInput('nip');
     }
 
     /**

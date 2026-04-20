@@ -11,7 +11,7 @@
         
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
-            background: radial-gradient(circle at top left, #1e293b 0%, #0f172a 100%);
+            background: #0f172a;
             overflow: hidden;
         }
 
@@ -35,18 +35,44 @@
             box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
         }
 
+        /* Background Waves Animation */
+        .waves {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 40vh;
+            margin-bottom: -7px;
+            min-height: 100px;
+            max-height: 150px;
+            z-index: -1;
+        }
+
+        .parallax > use {
+            animation: move-forever 25s cubic-bezier(.55, .5, .45, .5) infinite;
+        }
+        .parallax > use:nth-child(1) { animation-delay: -2s; animation-duration: 7s; }
+        .parallax > use:nth-child(2) { animation-delay: -3s; animation-duration: 10s; }
+        .parallax > use:nth-child(3) { animation-delay: -4s; animation-duration: 13s; }
+        .parallax > use:nth-child(4) { animation-delay: -5s; animation-duration: 20s; }
+
+        @keyframes move-forever {
+            0% { transform: translate3d(-90px, 0, 0); }
+            100% { transform: translate3d(85px, 0, 0); }
+        }
+
         .blob {
             position: absolute;
             width: 500px;
             height: 500px;
-            background: rgba(59, 130, 246, 0.15);
+            background: rgba(59, 130, 246, 0.1);
             filter: blur(80px);
             border-radius: 50%;
-            z-index: -1;
-            animation: move 20s infinite alternate;
+            z-index: -2;
+            animation: blob-move 20s infinite alternate;
         }
 
-        @keyframes move {
+        @keyframes blob-move {
             from { transform: translate(-10%, -10%); }
             to { transform: translate(20%, 20%); }
         }
@@ -54,20 +80,42 @@
 </head>
 <body class="min-h-screen flex items-center justify-center p-6 relative">
 
+    {{-- Background Elements --}}
     <div class="blob top-0 left-0"></div>
-    <div class="blob bottom-0 right-0" style="background: rgba(99, 102, 241, 0.1); animation-delay: -5s;"></div>
+    <div class="blob bottom-0 right-0" style="background: rgba(99, 102, 241, 0.05); animation-delay: -5s;"></div>
 
-    <div class="max-w-[450px] w-full glass-card rounded-[2.5rem] overflow-hidden">
+    {{-- Animated Waves --}}
+    <svg class="waves" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+    viewBox="0 24 150 28" preserveAspectRatio="none" shape-rendering="auto">
+        <defs>
+            <path id="gentle-wave" d="M-160 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v44h-352z" />
+        </defs>
+        <g class="parallax">
+            <use xlink:href="#gentle-wave" x="48" y="0" fill="rgba(59, 130, 246, 0.05)" />
+            <use xlink:href="#gentle-wave" x="48" y="3" fill="rgba(59, 130, 246, 0.1)" />
+            <use xlink:href="#gentle-wave" x="48" y="5" fill="rgba(59, 130, 246, 0.15)" />
+            <use xlink:href="#gentle-wave" x="48" y="7" fill="rgba(59, 130, 246, 0.2)" />
+        </g>
+    </svg>
+
+    <div class="max-w-[450px] w-full glass-card rounded-[2.5rem] overflow-hidden relative z-10">
         <div class="p-10">
+            {{-- Link ke Landing Page --}}
+            <div class="absolute top-6 right-8">
+                {{-- Diupdate ke route('landing') agar tepat sasaran --}}
+                <a href="{{ route('landing') }}" class="text-blue-400 hover:text-blue-300 transition-all flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest group">
+                    Beranda <i class="fas fa-external-link-alt group-hover:translate-x-1 transition-transform"></i>
+                </a>
+            </div>
+
             <div class="text-center mb-10">
                 <div class="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-tr from-blue-600 to-indigo-500 rounded-3xl mb-6 shadow-2xl rotate-3 transform transition hover:rotate-0 duration-500">
                     <i class="fas fa-shield-alt text-white text-3xl"></i>
                 </div>
                 <h1 class="text-4xl font-extrabold text-white tracking-tight mb-2">LINTAS</h1>
-                <p class="text-blue-300/80 text-xs font-semibold uppercase tracking-[0.2em]">System Engine & Aset Monitoring</p>
+                <p class="text-blue-300/80 text-xs font-semibold uppercase tracking-[0.2em]">Layanan Inventaris & Tata Aset Sistem</p>
             </div>
 
-            {{-- Menampilkan Error Login atau Page Expired --}}
             @if($errors->any())
             <div class="mb-6 p-4 bg-red-500/10 border border-red-500/50 text-red-200 text-sm rounded-2xl backdrop-blur-md">
                 <ul class="list-disc list-inside">
@@ -78,26 +126,24 @@
             </div>
             @endif
 
-            {{-- Route diarahkan ke route('login') agar lebih stabil --}}
             <form action="{{ route('login') }}" method="POST" class="space-y-6">
                 @csrf
                 
                 <div>
-                    <label class="block text-sm font-medium text-blue-200 mb-2 ml-1">Credential ID</label>
+                    <label class="block text-sm font-medium text-blue-200 mb-2 ml-1">Identitas NIP</label>
                     <div class="relative group">
                         <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-blue-400 group-focus-within:text-blue-300">
                             <i class="fas fa-id-badge text-lg"></i>
                         </span>
-                        <input type="text" name="username" value="{{ old('username') }}" required autofocus
+                        <input type="text" name="nip" value="{{ old('nip') }}" required autofocus
                             class="input-gradient block w-full pl-12 pr-4 py-4 rounded-2xl outline-none text-sm placeholder-gray-500"
-                            placeholder="Username Petugas">
+                            placeholder="Masukkan NIP Anda">
                     </div>
                 </div>
 
                 <div>
                     <div class="flex justify-between mb-2 ml-1">
                         <label class="text-sm font-medium text-blue-200">Security Key</label>
-                        <a href="#" class="text-xs text-blue-400 hover:text-blue-300 transition">Lupa Akses?</a>
                     </div>
                     <div class="relative group">
                         <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-blue-400 group-focus-within:text-blue-300">
