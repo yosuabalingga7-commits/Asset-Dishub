@@ -3,9 +3,12 @@
     if ($user && $user->foto) {
         $pathFoto = filter_var($user->foto, FILTER_VALIDATE_URL) ? $user->foto : asset('storage/' . $user->foto);
     } else {
-        // Tambahkan null coalescing ?? 'Guest' agar tidak error saat name kosong
         $pathFoto = 'https://ui-avatars.com/api/?name=' . urlencode($user->name ?? 'Guest') . '&background=4f46e5&color=fff';
     }
+    
+    // Ambil data notifikasi dinamis
+    $unreadCount = $user ? $user->unreadNotifications->count() : 0;
+    $notifications = $user ? $user->notifications()->take(5)->get() : collect();
 @endphp
 
 <header class="h-16 bg-indigo-900 flex items-center justify-between px-4 md:px-6 shadow-lg shadow-indigo-950/20 sticky top-0 z-[1050] flex-shrink-0" 
@@ -14,7 +17,6 @@
 
     {{-- Kiri: Branding & Burger Menu --}}
     <div class="flex items-center gap-2 md:gap-4">
-        {{-- Tombol Burger (Pemicu SidebarOpen di app.blade.php) --}}
         <button @click="sidebarOpen = true" class="lg:hidden p-2 text-white hover:bg-white/10 rounded-lg transition-colors">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
@@ -39,10 +41,12 @@
         <div class="relative">
             <button @click="notifOpen = !notifOpen; profileOpen = false" class="text-xl opacity-90 hover:opacity-100 relative p-1">
                 🔔
-                <span class="absolute top-0 right-0 flex h-2.5 w-2.5">
+                @if($unreadCount > 0)
+                <span class="absolute top-0 right-0 flex h-4 w-4">
                     <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                    <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+                    <span class="relative inline-flex rounded-full h-4 w-4 bg-red-500 text-[10px] flex items-center justify-center font-bold text-white">{{ $unreadCount }}</span>
                 </span>
+                @endif
             </button>
 
             {{-- Dropdown Notif --}}
@@ -56,11 +60,31 @@
                  class="absolute right-0 mt-3 w-72 md:w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 z-[1100] overflow-hidden">
                 <div class="px-5 py-3 border-b border-gray-50 flex justify-between items-center bg-gray-50/50">
                     <span class="text-[10px] font-black text-slate-800 uppercase tracking-widest">Notifikasi</span>
-                    <span class="text-[9px] font-bold text-white bg-indigo-600 px-2 py-0.5 rounded-full">Baru</span>
+                    @if($unreadCount > 0)
+                        <span class="text-[9px] font-bold text-white bg-indigo-600 px-2 py-0.5 rounded-full">{{ $unreadCount }} Baru</span>
+                    @endif
                 </div>
-                <div class="p-6 text-center">
-                    <span class="text-2xl block mb-2 opacity-30">📭</span>
-                    <h4 class="text-slate-800 font-bold text-[11px]">Belum Ada Notifikasi Baru</h4>
+                
+                <div class="max-h-80 overflow-y-auto">
+                    @forelse($notifications as $notif)
+                        <a href="{{ route('notifications.read', $notif->id) }}" class="block px-5 py-4 border-b border-gray-50 hover:bg-indigo-50 transition-colors {{ $notif->read_at ? 'opacity-60' : '' }}">
+                            <div class="flex gap-3">
+                                <div class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm {{ $notif->data['type'] == 'success' ? 'bg-emerald-100' : 'bg-indigo-100' }}">
+                                    {{ $notif->data['type'] == 'success' ? '✅' : '📢' }}
+                                </div>
+                                <div>
+                                    <h5 class="text-[11px] font-black text-slate-800 leading-tight uppercase">{{ $notif->data['title'] }}</h5>
+                                    <p class="text-[10px] text-slate-500 mt-1 leading-snug">{{ $notif->data['message'] }}</p>
+                                    <span class="text-[8px] text-indigo-400 font-bold mt-2 block">{{ $notif->created_at->diffForHumans() }}</span>
+                                </div>
+                            </div>
+                        </a>
+                    @empty
+                        <div class="p-6 text-center">
+                            <span class="text-2xl block mb-2 opacity-30">📭</span>
+                            <h4 class="text-slate-800 font-bold text-[11px]">Belum Ada Notifikasi Baru</h4>
+                        </div>
+                    @endforelse
                 </div>
             </div>
         </div>

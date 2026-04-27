@@ -52,6 +52,14 @@ class User extends Authenticatable
 
     // --- HELPER FUNCTIONS UNTUK ROLE ---
 
+    /**
+     * Method untuk mengecek role (Menyelesaikan error BadMethodCallException)
+     */
+    public function hasRole($role): bool
+    {
+        return $this->role === $role;
+    }
+
     public function isSuperAdmin(): bool
     {
         return $this->role === 'super_admin';

@@ -10,18 +10,14 @@ class MaintenanceTicket extends Model
 {
     use HasFactory;
 
-    // Nama tabel di database
     protected $table = 'maintenance_tickets';
 
-    /**
-     * Kolom yang boleh diisi secara massal (Mass Assignment)
-     */
     protected $fillable = [
         'ticket_code',
         'report_id',
         'asset_id',
         'user_id',
-        'seksi_id',        // TAMBAHAN: Untuk identifikasi Seksi penerima tugas
+        'seksi_id',
         'category',
         'kepemilikan',
         'subject',
@@ -42,9 +38,6 @@ class MaintenanceTicket extends Model
         'completion_notes', 
     ];
 
-    /**
-     * Casting atribut ke tipe data tertentu.
-     */
     protected $casts = [
         'started_at'  => 'datetime',
         'finished_at' => 'datetime',
@@ -53,9 +46,6 @@ class MaintenanceTicket extends Model
         'updated_at'  => 'datetime',
     ];
 
-    /**
-     * ACCESSOR: Status Slug
-     */
     public function getStatusSlugAttribute()
     {
         $status = strtolower($this->status);
@@ -76,25 +66,16 @@ class MaintenanceTicket extends Model
         return $status;
     }
 
-    /**
-     * Relasi ke tabel Laporan Masyarakat
-     */
     public function report()
     {
         return $this->belongsTo(LaporanMasyarakat::class, 'report_id');
     }
 
-    /**
-     * Relasi ke tabel Assets
-     */
     public function asset()
     {
         return $this->belongsTo(Asset::class, 'asset_id');
     }
 
-    /**
-     * Relasi ke tabel Users (Admin Pembuat/Penanggung Jawab)
-     */
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id')->withDefault([
@@ -102,25 +83,19 @@ class MaintenanceTicket extends Model
         ]);
     }
 
-    /**
-     * RELASI TAMBAHAN: Ke User sebagai Seksi
-     */
     public function seksi()
     {
-        return $this->belongsTo(User::class, 'seksi_id');
+        // PERBAIKAN: Relasi harus ke Model Seksi, bukan User
+        return $this->belongsTo(Seksi::class, 'seksi_id')->withDefault([
+            'nama_seksi' => 'Belum Ditugaskan'
+        ]);
     }
 
-    /**
-     * Relasi ke tabel MaintenanceLogs
-     */
     public function logs()
     {
         return $this->hasMany(MaintenanceLog::class, 'ticket_id');
     }
 
-    /**
-     * Helper untuk cek kategori di Blade/Controller
-     */
     public function isDishub()
     {
         return strtoupper($this->kepemilikan) === 'DISHUB' || strtolower($this->category) === 'dishub';

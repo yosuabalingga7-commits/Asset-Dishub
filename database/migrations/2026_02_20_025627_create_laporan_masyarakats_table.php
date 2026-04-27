@@ -15,9 +15,7 @@ return new class extends Migration
         Schema::create('laporan_masyarakats', function (Blueprint $table) {
             $table->id();
             
-            // Urutan otomatis setelah ID, tidak perlu pakai ->after()
             $table->string('ticket_number')->unique(); 
-            
             $table->string('nama_pelapor');
             $table->string('kontak_pelapor'); 
             $table->string('judul_laporan'); 
@@ -26,15 +24,19 @@ return new class extends Migration
             // PERBAIKAN: Ubah dari ENUM ke STRING agar bisa menerima "Pindah Tempat" dan pilihan lainnya
             $table->string('kondisi_aset')->default('Rusak');
             
-            // Lokasi koordinat
+            // Lokasi koordinat & Alamat (DITAMBAHKAN UNTUK KONSISTENSI CONTROLLER)
             $table->decimal('lat', 10, 8)->nullable();
             $table->decimal('lng', 11, 8)->nullable();
+            $table->string('alamat')->nullable(); // Tambahan: Agar tidak error di Controller index
             $table->string('lokasi_koordinat')->nullable(); 
             
             $table->string('foto')->nullable();
             
-            // Status Laporan (Tetap String agar lebih fleksibel)
-            $table->string('status')->default('masuk');
+            // Status & Validasi (DITAMBAHKAN UNTUK ALUR KERJA)
+            $table->string('status')->default('masuk'); // masuk, Proses Perbaikan, Selesai
+            $table->boolean('is_validated')->default(false); 
+            $table->string('kepemilikan')->nullable(); // dishub atau umum
+            $table->text('catatan_admin')->nullable();
             
             $table->timestamps();
         });

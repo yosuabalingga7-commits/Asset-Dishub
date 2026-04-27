@@ -3,18 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Models\Asset;
-use App\Models\Category; // TAMBAHAN: Import Model Category
-use App\Models\MaintenanceTicket; // PERBAIKAN: Menggunakan MaintenanceTicket, bukan Ticket
-use App\Models\LaporanMasyarakat; 
+use App\Models\Category;
+use App\Models\MaintenanceTicket;
+use App\Models\LaporanMasyarakat;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Artisan;
-// TAMBAHAN UNTUK EXPORT EXCEL
 use App\Exports\AssetExport;
 use Maatwebsite\Excel\Facades\Excel;
-// TAMBAHAN UNTUK EXPORT PDF
 use Barryvdh\DomPDF\Facade\Pdf;
 
 class AssetController extends Controller
@@ -38,16 +36,26 @@ class AssetController extends Controller
         DB::statement("UPDATE assets SET kategori = TRIM(kategori), jenis = TRIM(jenis)");
     }
 
-    public function index()
+    public function index(Request $request)
     {
         // Jalankan sinkronisasi otomatis
         $this->sinkronisasiDataLama();
 
-        // 1. Ambil semua data aset dengan relasi kategori (PERBAIKAN)
-        $assets = Asset::with('category')->get();
+        // 1. Ambil data aset (Siapkan query untuk filter jika diperlukan di masa depan via request)
+        $query = Asset::with('category');
 
-        // 2. LOGIKA SIDEBAR KATEGORI
-        $sidebar_categories = Asset::select('kategori', DB::raw('count(distinct jenis) as total_jenis'))
+        if ($request->has('status') && $request->status != '') {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->has('kategori') && $request->kategori != '') {
+            $query->where('kategori', $request->kategori);
+        }
+
+        $assets = $query->get();
+
+        // 2. LOGIKA SIDEBAR KATEGORI (Menghitung jumlah aset per kategori untuk statistik sidebar)
+        $sidebar_categories = Asset::select('kategori', DB::raw('count(*) as total_aset'), DB::raw('count(distinct jenis) as total_jenis'))
             ->groupBy('kategori')
             ->get();
 
@@ -56,15 +64,24 @@ class AssetController extends Controller
             ->groupBy('kategori', 'jenis')
             ->get();
 
-        // 4. Hitung Total Keseluruhan
-        $total_aset = $assets->count();
+        // 4. LOGIKA STATISTIK KONDISI (Untuk Chart & Sidebar List)
+        // Memastikan semua status (Baik, Proses, Rusak, Kritis) terhitung meskipun 0
+        $status_counts = Asset::select('status', DB::raw('count(*) as total'))
+            ->groupBy('status')
+            ->get()
+            ->pluck('total', 'status')
+            ->toArray();
 
-        // 5. Hitung Laporan Masyarakat
+        $default_statuses = ['Baik' => 0, 'Proses Perbaikan' => 0, 'Rusak' => 0, 'Kritis' => 0];
+        $final_status_stats = array_merge($default_statuses, $status_counts);
+
+        // 5. Hitung Total Keseluruhan & Laporan
+        $total_aset = Asset::count();
         $total_laporan = class_exists(LaporanMasyarakat::class) 
             ? LaporanMasyarakat::whereIn('status', ['masuk', 'pending'])->count() 
             : 0;
 
-        // 6. Hitung Petugas Aktif HARI INI (PERBAIKAN: Menggunakan MaintenanceTicket dan user_id)
+        // 6. Hitung Petugas Aktif HARI INI
         $petugas_aktif = class_exists(MaintenanceTicket::class)
             ? MaintenanceTicket::whereDate('created_at', date('Y-m-d'))
                 ->distinct('user_id')
@@ -79,7 +96,8 @@ class AssetController extends Controller
 
         $statuses = ['Baik', 'Proses Perbaikan', 'Rusak', 'Kritis'];
         
-        return view('partials.Dashboard', compact(
+        // Sesuaikan view target ke admin.assets.Dashboard sesuai struktur folder Anda
+        return view('admin.assets.Dashboard', compact(
             'assets', 
             'mapConfig', 
             'sidebar_categories', 
@@ -87,7 +105,8 @@ class AssetController extends Controller
             'total_aset',
             'total_laporan', 
             'petugas_aktif',
-            'statuses'
+            'statuses',
+            'final_status_stats'
         ));
     }
 
@@ -106,7 +125,7 @@ class AssetController extends Controller
     {
         $pilihan_data = $this->getPilihanData();
         $statuses = ['Baik', 'Proses Perbaikan', 'Rusak', 'Kritis'];
-        $categories = Category::all(); // TAMBAHAN: Ambil data kategori untuk dropdown
+        $categories = Category::all();
 
         $mapConfig = [
             'center' => [-6.8431, 107.4912],
@@ -119,7 +138,7 @@ class AssetController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'category_id' => 'nullable|exists:categories,id', // TAMBAHAN: Validasi ID Kategori
+            'category_id' => 'nullable|exists:categories,id',
             'nama' => 'required|string|max:255',
             'kategori' => 'required',
             'jenis' => 'required',
@@ -164,7 +183,7 @@ class AssetController extends Controller
         $asset = Asset::findOrFail($id);
         $pilihan_data = $this->getPilihanData();
         $statuses = ['Baik', 'Proses Perbaikan', 'Rusak', 'Kritis'];
-        $categories = Category::all(); // TAMBAHAN: Ambil data kategori
+        $categories = Category::all();
 
         $mapConfig = [
             'center' => [$asset->lat, $asset->lng],
@@ -179,7 +198,7 @@ class AssetController extends Controller
         $asset = Asset::findOrFail($id);
 
         $request->validate([
-            'category_id' => 'nullable|exists:categories,id', // TAMBAHAN: Validasi ID Kategori
+            'category_id' => 'nullable|exists:categories,id',
             'nama' => 'required|string|max:255',
             'kategori' => 'required',
             'jenis' => 'required',

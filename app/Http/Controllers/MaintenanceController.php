@@ -8,6 +8,7 @@ use App\Models\MaintenanceTicket;
 use App\Models\LaporanMasyarakat;
 use App\Models\Asset; 
 use App\Models\User; 
+use App\Notifications\MaintenanceNotification; // TAMBAHAN UNTUK NOTIFIKASI
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
@@ -50,14 +51,15 @@ class MaintenanceController extends Controller
                 $displaySource = $ticket->isDishub() ? 'DISHUB' : 'UMUM/PIHAK 3';
             }
 
-            $statusSlug = strtolower($ticket->status);
+            $statusAsli = $ticket->status;
+            $statusSlug = strtolower($statusAsli);
             if ($statusSlug == 'proses') $statusSlug = 'process';
             if ($statusSlug == 'selesai') $statusSlug = 'finished';
 
             return [
                 'id' => $ticket->id, 
                 'ticket_code' => $ticket->ticket_code,
-                'status' => $statusSlug, 
+                'status' => $statusAsli,
                 'status_slug' => $statusSlug, 
                 'prioritas' => $ticket->priority, 
                 'asset' => $ticket->jenis_aset ?? ($ticket->report->jenis_aset ?? 'Aset Umum'),
@@ -71,20 +73,14 @@ class MaintenanceController extends Controller
                                     ? asset('storage/' . $ticket->report->foto) 
                                     : asset('img/panelPJU.png'),
                 'foto_sesudah' => $ticket->foto_perbaikan ? asset('storage/' . $ticket->foto_perbaikan) : null,
-                'progress_percent' => $statusSlug == 'finished' ? 100 : ($statusSlug == 'process' ? 50 : 0),
+                'progress_percent' => $statusAsli == 'selesai' ? 100 : ($statusAsli == 'proses' ? 50 : 0),
                 'source' => $displaySource, 
-                'is_dishub' => (str_contains(strtoupper($displaySource), 'DISHUB'))
+                'is_dishub' => true 
             ];
-        })->filter(function($item) {
-            return $item['is_dishub'] === true;
         });
 
         // 4. Transformasi data Laporan Warga
         $dataLaporan = $laporanWarga->map(function ($laporan) {
-            $isProbablyDishub = str_contains(strtolower($laporan->judul_laporan), 'pju') || 
-                                str_contains(strtolower($laporan->judul_laporan), 'lalin') ||
-                                str_contains(strtolower($laporan->judul_laporan), 'rambu');
-
             return [
                 'id' => $laporan->id,
                 'ticket_code' => 'WAITING',
@@ -101,11 +97,9 @@ class MaintenanceController extends Controller
                 'foto_sebelum' => $laporan->foto ? asset('storage/' . $laporan->foto) : asset('img/panelPJU.png'),
                 'foto_sesudah' => null,
                 'progress_percent' => 0,
-                'source' => $isProbablyDishub ? 'DISHUB' : 'UMUM', 
-                'is_dishub' => $isProbablyDishub 
+                'source' => 'MASYARAKAT', 
+                'is_dishub' => true 
             ];
-        })->filter(function($item) {
-            return $item['is_dishub'] === true;
         });
 
         $allTickets = $dataTickets->concat($dataLaporan);
@@ -130,16 +124,8 @@ class MaintenanceController extends Controller
         $reportId = $request->query('report_id');
         $laporan = $reportId ? LaporanMasyarakat::find($reportId) : null;
         
-        $listSeksi = collect([
-            (object)['id' => 101, 'name' => 'Seksi PJU', 'no_wa' => '081234567890', 'gender' => 'pria'],
-            (object)['id' => 102, 'name' => 'Seksi Perlengkapan Jalan', 'no_wa' => '081234567891', 'gender' => 'wanita'],
-            (object)['id' => 103, 'name' => 'Seksi Fasilitas Lalin', 'no_wa' => '081234567892', 'gender' => 'pria']
-        ]);
-
-        $realUsers = User::all();
-        if ($realUsers->isNotEmpty()) {
-            $listSeksi = $listSeksi->concat($realUsers);
-        }
+        // Mengambil user dengan relasi seksi agar di view bisa muncul nama seksinya
+        $listSeksi = User::with('seksi')->get();
 
         $categories = collect([
             (object)['id' => 1, 'name' => 'PENERANGAN JALAN UMUM (PJU)'],
@@ -160,27 +146,15 @@ class MaintenanceController extends Controller
         ]);
 
         try {
-            $userId = $request->user_id;
-            $petugasName = 'Unknown';
-            $petugasWA = '';
+            // AMBIL DATA ORANGNYA BERDASARKAN ID DARI DROPDOWN
+            $userDb = User::findOrFail($request->user_id);
+            
+            $petugasName = $userDb->name;
+            $petugasWA = $userDb->no_wa;
+            $dbUserId = $userDb->id; 
+            $targetSeksiId = $userDb->seksi_id; // KUNCI: Otomatis ambil seksi_id dari profil user
 
-            $userDb = User::find($userId);
-            if ($userDb) {
-                $petugasName = $userDb->name;
-                $petugasWA = $userDb->no_wa;
-            } else {
-                $staticSeksi = [
-                    101 => ['name' => 'Seksi PJU', 'wa' => '081234567890', 'gender' => 'pria'],
-                    102 => ['name' => 'Seksi Perlengkapan Jalan', 'wa' => '081234567891', 'gender' => 'wanita'],
-                    103 => ['name' => 'Seksi Fasilitas Lalin', 'wa' => '081234567892', 'gender' => 'pria'],
-                ];
-                if (isset($staticSeksi[$userId])) {
-                    $petugasName = $staticSeksi[$userId]['name'];
-                    $petugasWA = $staticSeksi[$userId]['wa'];
-                }
-            }
-
-            $ticket = DB::transaction(function () use ($request, $userId, $petugasName) {
+            $ticket = DB::transaction(function () use ($request, $dbUserId, $petugasName, $targetSeksiId) {
                 $ticketCode = 'MNT-' . strtoupper(Str::random(8));
                 $categoryName = $request->category ?? ''; 
                 
@@ -203,8 +177,12 @@ class MaintenanceController extends Controller
                     'longitude'        => $request->longitude,
                     'description'      => $request->description,
                     'jenis_aset'       => $request->jenis_aset,
-                    'user_id'          => $userId < 100 ? $userId : null,
+                    
+                    // OTOMATIS SINKRON DENGAN PROFIL USER TERPILIH
+                    'seksi_id'         => $targetSeksiId, 
+                    'user_id'          => $dbUserId, 
                     'technician_name'  => $petugasName, 
+                    
                     'deadline'         => $request->deadline,
                     'edit_reason'      => $request->edit_reason,
                     'started_at'       => now(),
@@ -219,7 +197,15 @@ class MaintenanceController extends Controller
                 return $newTicket;
             });
 
-            // --- UPDATE FUNGSI WA BOT (OTOMATIS TANPA REDIRECT) ---
+            // --- KIRIM NOTIFIKASI INTERNAL KE SEKSI TERPILIH ---
+            $userDb->notify(new MaintenanceNotification([
+                'title' => 'PENUGASAN BARU',
+                'message' => 'Anda ditugaskan untuk tiket ' . $ticket->ticket_code . '. Segera tindaklanjuti.',
+                'url' => route('admin.maintenance.show', $ticket->id),
+                'type' => 'urgent'
+            ]));
+
+            // --- WA BOT NOTIFIKASI ---
             if ($request->send_wa == '1' && !empty($petugasWA)) {
                 $urlDetail = route('admin.maintenance.show', $ticket->id);
                 $now = Carbon::now();
@@ -230,38 +216,28 @@ class MaintenanceController extends Controller
                 elseif ($hour >= 15 && $hour < 18) { $salam = "Selamat Sore"; }
                 else { $salam = "Selamat Malam"; }
 
-                $staticSeksiInfo = [
-                    101 => ['gender' => 'pria'],
-                    102 => ['gender' => 'wanita'],
-                    103 => ['gender' => 'pria'],
-                ];
-                $panggilan = (isset($staticSeksiInfo[$userId]) && $staticSeksiInfo[$userId]['gender'] == 'wanita') ? "Bu" : "Pak";
+                $panggilan = "Pak/Bu";
                 $namaPetugas = strtoupper($petugasName);
                 $jenisAset = $request->jenis_aset ?: ($ticket->jenis_aset ?: 'Aset Dishub');
 
                 $pesan = "--- *NOTIFIKASI KBB-SMART ASSET* ---\n\n"
                        . $salam . ", " . $panggilan . " *" . $namaPetugas . "*.\n\n"
                        . "Izin memberitahukan, terdapat penugasan perbaikan aset baru: *" . $jenisAset . "*.\n\n"
-                       . "Untuk informasi lebih lengkap mengenai lokasi dan instruksi pengerjaan, silakan klik tautan resmi berikut:\n\n"
                        . "🔗 *DETAIL TUGAS:* \n" . $urlDetail . "\n\n"
-                       . "Mohon untuk segera ditindaklanjuti. Terima kasih atas kerja samanya.\n\n"
-                       . "_Hormat kami,_\n"
+                       . "Mohon untuk segera ditindaklanjuti. Terima kasih.\n\n"
                        . "*Admin Dishub KBB*";
 
-                // PANGGIL ROBOT WA DI PORT 3000
                 try {
                     Http::timeout(5)->post('http://localhost:3000/send-message', [
-                        'phone' => $petugasWA,
+                        'phone' => $this->formatPhone($petugasWA),
                         'message' => $pesan,
                     ]);
                 } catch (\Exception $waError) {
                     \Log::error("Gagal panggil Robot WA: " . $waError->getMessage());
-                    // Tetap lanjut redirect walau WA gagal agar data tersimpan
                 }
             }
-            // --- AKHIR UPDATE WA BOT ---
 
-            return redirect()->route('admin.maintenance.index')->with('success', 'Tiket maintenance berhasil dibuat dan instruksi telah dikirim otomatis via WhatsApp.');
+            return redirect()->route('admin.maintenance.index')->with('success', 'Tiket maintenance berhasil dibuat.');
 
         } catch (\Exception $e) {
             return back()->withInput()->with('error', 'Gagal menyimpan data: ' . $e->getMessage());
@@ -280,16 +256,7 @@ class MaintenanceController extends Controller
             (object)['id' => 5, 'name' => 'PRASARANA TRANSPORTASI']
         ]);
 
-        $listPetugas = collect([
-            (object)['id' => 101, 'name' => 'Seksi PJU', 'gender' => 'pria'],
-            (object)['id' => 102, 'name' => 'Seksi Perlengkapan Jalan', 'gender' => 'wanita'],
-            (object)['id' => 103, 'name' => 'Seksi Fasilitas Lalin', 'gender' => 'pria']
-        ]);
-
-        $realUsers = User::all();
-        if ($realUsers->isNotEmpty()) {
-            $listPetugas = $listPetugas->concat($realUsers);
-        }
+        $listPetugas = User::with('seksi')->get();
 
         return view('admin.maintenance.edit', compact('ticket', 'categories', 'listPetugas'));
     }
@@ -297,17 +264,15 @@ class MaintenanceController extends Controller
     public function update(Request $request, $id) 
     {
         $request->validate([
-            'description' => 'nullable',
             'status' => 'required',
             'foto_perbaikan' => 'nullable|image|mimes:jpeg,png,jpg|max:5120',
-            'completion_notes' => 'nullable'
         ]);
 
         try {
             DB::beginTransaction();
 
             $maintenance = MaintenanceTicket::findOrFail($id);
-            $input = $request->all();
+            $input = $request->except('foto_perbaikan');
 
             if ($request->status == 'selesai') {
                 $input['finished_at'] = now();
@@ -326,12 +291,24 @@ class MaintenanceController extends Controller
                 if ($maintenance->report_id) {
                     LaporanMasyarakat::where('id', $maintenance->report_id)->update(['status' => 'Selesai']);
                 }
+
+                // --- KIRIM NOTIF BALIK KE SUPER ADMIN SAAT SELESAI ---
+                $superAdmins = User::where('role', 'super_admin')->get();
+                $notifData = [
+                    'title' => 'PERBAIKAN SELESAI',
+                    'message' => 'Seksi ' . Auth::user()->name . ' telah menyelesaikan tiket ' . $maintenance->ticket_code,
+                    'url' => route('admin.maintenance.show', $maintenance->id),
+                    'type' => 'success'
+                ];
+                foreach ($superAdmins as $admin) {
+                    $admin->notify(new MaintenanceNotification($notifData));
+                }
             }
 
             $maintenance->update($input);
 
             DB::commit();
-            return redirect()->route('admin.maintenance.index')->with('success', 'Data perbaikan berhasil dikonfirmasi dan status aset telah diperbarui.');
+            return redirect()->route('admin.maintenance.index')->with('success', 'Data perbaikan berhasil diperbarui.');
             
         } catch (\Exception $e) {
             DB::rollback();
@@ -372,6 +349,17 @@ class MaintenanceController extends Controller
                 if ($ticket->report_id) {
                     LaporanMasyarakat::where('id', $ticket->report_id)->update(['status' => 'Selesai']);
                 }
+
+                // --- KIRIM NOTIF BALIK KE SUPER ADMIN ---
+                $superAdmins = User::where('role', 'super_admin')->get();
+                foreach ($superAdmins as $admin) {
+                    $admin->notify(new MaintenanceNotification([
+                        'title' => 'PERBAIKAN SELESAI',
+                        'message' => 'Tiket ' . $ticket->ticket_code . ' telah ditandai selesai.',
+                        'url' => route('admin.maintenance.show', $ticket->id),
+                        'type' => 'success'
+                    ]));
+                }
             }
             
             $ticket->save();
@@ -381,7 +369,7 @@ class MaintenanceController extends Controller
                 return response()->json(['success' => true]);
             }
 
-            return redirect()->route('admin.maintenance.index')->with('success', 'Tugas berhasil diselesaikan!');
+            return redirect()->route('admin.maintenance.index')->with('success', 'Status berhasil diperbarui!');
             
         } catch (\Exception $e) {
             DB::rollback();

@@ -119,9 +119,10 @@
                 </button>
             </div>
 
-            {{-- ERROR VALIDASI TAMPIL DI SINI --}}
+            {{-- Menampilkan Pesan Error Validasi dengan Bahasa Indonesia yang Jelas --}}
             @if ($errors->any())
                 <div class="mb-6 p-4 bg-rose-50 border-l-4 border-rose-500 rounded-2xl">
+                    <p class="text-rose-600 text-[10px] font-black uppercase mb-2 tracking-widest">⚠️ Ada kesalahan pengisian:</p>
                     <ul class="list-disc list-inside text-rose-600 text-xs font-bold space-y-1">
                         @foreach ($errors->all() as $error)
                             <li>{{ $error }}</li>
@@ -145,6 +146,7 @@
                         <input type="email" name="email" value="{{ old('email') }}" placeholder="Email Instansi" class="w-full bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl p-4 outline-none transition-all text-slate-900 font-semibold" required>
                     </div>
                     
+                    {{-- DROPDOWN BIDANG --}}
                     <div class="relative">
                         <select name="seksi_id" class="w-full bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl p-4 outline-none transition-all text-slate-900 font-semibold appearance-none" required>
                             <option value="" class="text-slate-400">-- Pilih Bidang --</option>
@@ -182,7 +184,6 @@
     </div>
 </div>
 
-{{-- SCRIPT AUTO-OPEN MODAL JIKA ERROR --}}
 @if($errors->any())
 <script>
     document.addEventListener('DOMContentLoaded', function() {

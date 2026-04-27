@@ -21,20 +21,35 @@
         line-height: 0.9;
         letter-spacing: -0.05em;
     }
+
+    /* Gaya untuk galeri */
+    .gallery-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+    }
+    .gallery-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .gallery-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 25px -12px rgba(0, 0, 0, 0.1);
+    }
 </style>
 
 <div class="font-inter bg-white">
-    <section class="relative min-h-screen flex items-center overflow-hidden">
+    {{-- Update: Background diganti dengan background_dishub_kbb.png --}}
+    <section class="relative min-h-screen flex items-center overflow-hidden pb-32 pt-20">
         
         <div class="absolute inset-0 z-0">
-            <img src="{{ asset('img/background.png') }}" alt="Visual" 
+            <img src="{{ asset('img/background_dishub_kbb.png') }}" alt="Visual Dishub KBB" 
                  class="w-full h-full object-cover">
             
             <div class="absolute inset-0 hero-overlay-soft"></div>
         </div>
 
         <div class="relative z-20 max-w-7xl mx-auto px-8 w-full">
-            <div x-data="{ show: false }" x-init="setTimeout(() => show = true, 100)" class="max-w-3xl py-20">
+            <div x-data="{ show: false }" x-init="setTimeout(() => show = true, 100)" class="max-w-3xl">
                 
                 <div x-show="show" x-transition.duration.800ms
                      class="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-blue-600/10 border border-blue-600/20 text-blue-600 text-[10px] font-bold uppercase tracking-[0.3em] mb-8">
@@ -61,19 +76,21 @@
                     Sistem pelaporan dan pendataan aset infrastruktur jalan yang terintegrasi untuk mewujudkan pelayanan publik yang prima di wilayah KBB.
                 </p>
 
+                {{-- Group Tombol --}}
                 <div x-show="show" x-transition.delay.600ms
-                     class="flex flex-wrap gap-5">
+                     class="flex flex-wrap gap-5 relative z-50">
                     <a href="{{ route('lapor.public') }}" class="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm tracking-widest uppercase shadow-lg shadow-blue-600/30 transition-all hover:-translate-y-1 active:scale-95">
                         📢 LAPOR SEKARANG
                     </a>
-                    <a href="#tentang" class="px-8 py-4 bg-white/80 backdrop-blur-sm text-slate-700 border border-slate-200 rounded-xl font-bold text-sm tracking-widest uppercase transition-all hover:bg-white shadow-sm">
-                        Pelajari Sistem
+                    <a href="#kegiatan" class="px-8 py-4 bg-white/80 backdrop-blur-sm text-slate-700 border border-slate-200 rounded-xl font-bold text-sm tracking-widest uppercase transition-all hover:bg-white shadow-sm">
+                        Lihat Kegiatan
                     </a>
                 </div>
             </div>
         </div>
 
-        <div class="absolute bottom-24 right-12 z-30 hidden xl:block">
+        {{-- Floating Badge: KBB Smart System --}}
+        <div class="absolute bottom-32 right-12 z-30 hidden xl:block">
             <div class="p-6 bg-white/70 backdrop-blur-md border border-white/40 rounded-3xl shadow-xl max-w-xs transition-transform hover:scale-105 duration-500">
                 <div class="flex items-center gap-4">
                     <div class="p-3 bg-blue-600 rounded-xl shadow-lg shadow-blue-600/20">
@@ -82,8 +99,8 @@
                         </svg>
                     </div>
                     <div>
-                        <h4 class="text-slate-900 font-bold text-xs uppercase tracking-tight">KBB Smart System</h4>
-                        <p class="text-blue-600 text-[10px] font-bold">Infrastruktur Terpadu</p>
+                        <h4 class="text-slate-900 font-bold text-xs uppercase tracking-tight">LINTAS</h4>
+                        <p class="text-blue-600 text-[10px] font-bold">Layanan Inventaris & Tata Aset Sistem</p>
                     </div>
                 </div>
             </div>
@@ -158,5 +175,65 @@
             </div>
         </div>
     </section>
+
+    {{-- ========== SECTION BARU: GALERI KEGIATAN DISHUB (SETELAH TENTANG) ========== --}}
+    <section id="kegiatan" class="py-28 bg-slate-50/80">
+        <div class="max-w-7xl mx-auto px-8">
+            <div class="text-center mb-16">
+                <span class="text-blue-600 font-bold text-xs uppercase tracking-[0.3em] bg-blue-600/10 px-4 py-1.5 rounded-full inline-block mb-6">Galeri Kegiatan</span>
+                <h2 class="text-4xl lg:text-6xl font-black text-slate-900 tracking-tighter mb-6">
+                    Dokumentasi <span class="text-blue-600">Dishub KBB</span>
+                </h2>
+                <p class="text-slate-500 text-lg max-w-2xl mx-auto">
+                    Wujud nyata sinergi dan penanganan aset infrastruktur untuk masyarakat Bandung Barat.
+                </p>
+            </div>
+
+            <div class="gallery-grid">
+                <!-- Foto 1 -->
+                <div class="gallery-card bg-white rounded-2xl overflow-hidden shadow-md">
+                    <div class="h-64 overflow-hidden">
+                        <img src="{{ asset('img/kegiatan_dishub_kbb1.png') }}" alt="Kegiatan Dishub 1" class="w-full h-full object-cover transition duration-500 hover:scale-105">
+                    </div>
+                    <div class="p-5">
+                        <h4 class="font-bold text-slate-800">Inspeksi Jalan & Jembatan</h4>
+                        <p class="text-slate-500 text-sm mt-1">Tim teknis melakukan pengecekan rutin infrastruktur.</p>
+                    </div>
+                </div>
+                <!-- Foto 2 -->
+                <div class="gallery-card bg-white rounded-2xl overflow-hidden shadow-md">
+                    <div class="h-64 overflow-hidden">
+                        <img src="{{ asset('img/kegiatan_dishub_kbb2.png') }}" alt="Kegiatan Dishub 2" class="w-full h-full object-cover transition duration-500 hover:scale-105">
+                    </div>
+                    <div class="p-5">
+                        <h4 class="font-bold text-slate-800">Koordinasi Lintas Sektor</h4>
+                        <p class="text-slate-500 text-sm mt-1">Sinergi untuk percepatan penanganan aset daerah.</p>
+                    </div>
+                </div>
+                <!-- Foto 3 -->
+                <div class="gallery-card bg-white rounded-2xl overflow-hidden shadow-md">
+                    <div class="h-64 overflow-hidden">
+                        <img src="{{ asset('img/kegiatan_dishub_kbb3.png') }}" alt="Kegiatan Dishub 3" class="w-full h-full object-cover transition duration-500 hover:scale-105">
+                    </div>
+                    <div class="p-5">
+                        <h4 class="font-bold text-slate-800">Sosialisasi LINTAS</h4>
+                        <p class="text-slate-500 text-sm mt-1">Edukasi publik tentang layanan pelaporan aset.</p>
+                    </div>
+                </div>
+                <!-- Foto 4 -->
+                <div class="gallery-card bg-white rounded-2xl overflow-hidden shadow-md">
+                    <div class="h-64 overflow-hidden">
+                        <img src="{{ asset('img/kegiatan_dishub_kbb4.png') }}" alt="Kegiatan Dishub 4" class="w-full h-full object-cover transition duration-500 hover:scale-105">
+                    </div>
+                    <div class="p-5">
+                        <h4 class="font-bold text-slate-800">Monitoring & Evaluasi</h4>
+                        <p class="text-slate-500 text-sm mt-1">Evaluasi berkala untuk meningkatkan kualitas layanan.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    {{-- ========== AKHIR GALERI KEGIATAN ========== --}}
+
 </div>
 @endsection

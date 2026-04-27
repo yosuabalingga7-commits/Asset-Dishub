@@ -13,6 +13,7 @@ class UserManagementController extends Controller
     public function index()
     {
         // Menampilkan semua user (latest() agar yang baru dibuat ada di atas)
+        // Pastikan relasi 'seksi' dipanggil agar nama Bidang muncul di tabel
         $users = User::with('seksi')->latest()->get();
         
         // Ambil data seksi untuk dropdown modal
@@ -23,23 +24,40 @@ class UserManagementController extends Controller
 
     public function store(Request $request)
     {
-        // Validasi input
+        // 1. Format nomor WA dulu ke standar 62 sebelum divalidasi
+        // Ini penting agar validasi unique di database sinkron
+        if ($request->no_wa) {
+            $no_wa_formatted = preg_replace('/[^0-9]/', '', $request->no_wa);
+            if (substr($no_wa_formatted, 0, 1) === '0') {
+                $no_wa_formatted = '62' . substr($no_wa_formatted, 1);
+            }
+            $request->merge(['no_wa' => $no_wa_formatted]);
+        }
+
+        // 2. Validasi input dengan pesan kustom bahasa Indonesia
         $request->validate([
             'name'     => 'required|string|max:255',
             'nip'      => 'required|numeric|unique:users,nip', 
             'email'    => 'required|email|unique:users,email',
             'password' => 'required|min:6',
-            'no_wa'    => 'required|string',
-            'seksi_id' => 'required', // Jika error 'exists', coba pastikan tabel seksis ada isinya
+            'no_wa'    => 'required|unique:users,no_wa', // Cek duplikat WA
+            'seksi_id' => 'required|exists:seksis,id', 
+        ], [
+            'name.required'     => 'Nama lengkap wajib diisi.',
+            'nip.required'      => 'NIP / Username wajib diisi.',
+            'nip.numeric'       => 'NIP harus berupa angka.',
+            'nip.unique'        => 'Gagal! NIP ini sudah terdaftar di sistem.',
+            'email.required'    => 'Alamat email wajib diisi.',
+            'email.email'       => 'Format email tidak valid.',
+            'email.unique'      => 'Gagal! Email ini sudah digunakan oleh akun lain.',
+            'password.required' => 'Password wajib diisi.',
+            'password.min'      => 'Password minimal harus 6 karakter.',
+            'no_wa.required'    => 'Nomor WhatsApp wajib diisi.',
+            'no_wa.unique'      => 'Gagal! Nomor WhatsApp ini sudah terdaftar. Gunakan nomor lain.',
+            'seksi_id.required' => 'Bidang/Seksi wajib dipilih.',
         ]);
 
         try {
-            // Format nomor WA ke standar 62
-            $no_wa = preg_replace('/[^0-9]/', '', $request->no_wa);
-            if (substr($no_wa, 0, 1) === '0') {
-                $no_wa = '62' . substr($no_wa, 1);
-            }
-
             // Eksekusi Pembuatan User
             User::create([
                 'name'           => $request->name,
@@ -48,7 +66,7 @@ class UserManagementController extends Controller
                 'password'       => Hash::make($request->password),
                 'password_plain' => $request->password, // Simpan password asli untuk Admin
                 'role'           => 'seksi', 
-                'no_wa'          => $no_wa,
+                'no_wa'          => $request->no_wa,
                 'seksi_id'       => $request->seksi_id,
                 'status'         => 'aktif', 
                 'is_active'      => true,
@@ -57,37 +75,44 @@ class UserManagementController extends Controller
             return redirect()->route('admin.users.index')->with('success', 'Akun Seksi berhasil didaftarkan!');
 
         } catch (\Exception $e) {
-            // Jika ada error database, balikkan dengan pesan error dan buka modal lagi
-            return back()->withInput()->withErrors(['db_error' => 'Gagal menyimpan data: ' . $e->getMessage()]);
+            // Jika masih ada error database tak terduga, tampilkan pesan yang lebih rapi
+            return back()->withInput()->withErrors(['db_error' => 'Terjadi kesalahan pada sistem. Silakan coba lagi atau cek data yang Anda masukkan.']);
         }
     }
 
     public function settings($id)
     {
         $user = User::findOrFail($id);
-        return view('admin.users.settings', compact('user'));
+        $daftar_seksi = Seksi::all(); // Tambahkan ini agar di halaman setting bisa ubah seksi
+        return view('admin.users.settings', compact('user', 'daftar_seksi'));
     }
 
     public function update(Request $request, $id)
     {
         $user = User::findOrFail($id);
         
+        // Format WA sebelum update
+        if ($request->no_wa) {
+            $no_wa_formatted = preg_replace('/[^0-9]/', '', $request->no_wa);
+            if (substr($no_wa_formatted, 0, 1) === '0') $no_wa_formatted = '62' . substr($no_wa_formatted, 1);
+            $request->merge(['no_wa' => $no_wa_formatted]);
+        }
+
         $request->validate([
             'name'  => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $user->id,
-            'no_wa' => 'nullable|string',
+            'no_wa' => 'nullable|unique:users,no_wa,' . $user->id,
+            'seksi_id' => 'required|exists:seksis,id', 
+        ], [
+            'email.unique' => 'Email sudah digunakan akun lain.',
+            'no_wa.unique' => 'Nomor WhatsApp sudah terdaftar.',
         ]);
 
         $user->name = $request->name;
         $user->email = $request->email;
-        
-        if ($request->no_wa) {
-            $no_wa = preg_replace('/[^0-9]/', '', $request->no_wa);
-            if (substr($no_wa, 0, 1) === '0') $no_wa = '62' . substr($no_wa, 1);
-            $user->no_wa = $no_wa;
-        }
+        $user->seksi_id = $request->seksi_id;
+        $user->no_wa = $request->no_wa;
 
-        // Jika password diisi saat edit, update juga password_plain-nya
         if ($request->filled('password')) {
             $user->password = Hash::make($request->password);
             $user->password_plain = $request->password; 

@@ -3,7 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LINTAS - Layanan Inventaris & Tata Aset Sistem</title>
+    <title>LINTAS - Layanan Inventaris & Tata Aset Sistem Dishub KBB</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800;14..32,900&display=swap" rel="stylesheet">
     
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -14,9 +18,16 @@
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
-        
-        :root { font-family: 'Inter', sans-serif; }
+        /* inter-300 - latin */
+        @font-face {
+            font-family: 'Inter';
+            font-style: normal;
+            font-weight: 300;
+            font-display: swap;
+            src: url('https://fonts.gstatic.com/s/inter/v13/UcC73FwrK3iLTeHuS_fvQtMwCp50KnMa2JL7W0Q5n-wU.woff2') format('woff2');
+        }
+        /* Gaya tambahan */
+        :root { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
         [x-cloak] { display: none !important; }
         html { scroll-behavior: smooth; }
 
@@ -46,10 +57,18 @@
                 </div>
 
                 <div class="hidden md:flex items-center">
-                    <a href="{{ route('login') }}" 
-                       class="px-6 py-2.5 bg-slate-900 hover:bg-blue-600 text-white text-xs font-bold rounded-full transition-all duration-300 shadow-lg shadow-slate-900/20 uppercase tracking-widest">
-                        Login Portal
-                    </a>
+                    {{-- SOLUSI: Cek jika di halaman lapor, tampilkan Beranda. Jika tidak, tampilkan Login --}}
+                    @if(Request::is('lapor*'))
+                        <a href="{{ url('/') }}" 
+                           class="px-6 py-2.5 bg-[#0B2A4A] hover:bg-[#F4B400] text-white hover:text-[#0B2A4A] text-xs font-bold rounded-full transition-all duration-300 shadow-lg uppercase tracking-widest">
+                            Beranda Utama
+                        </a>
+                    @else
+                        <a href="{{ route('login') }}" 
+                           class="px-6 py-2.5 bg-slate-900 hover:bg-blue-600 text-white text-xs font-bold rounded-full transition-all duration-300 shadow-lg shadow-slate-900/20 uppercase tracking-widest">
+                            Login Portal
+                        </a>
+                    @endif
                 </div>
 
                 <div class="md:hidden">
@@ -70,7 +89,11 @@
              x-transition:enter-start="opacity-0 -translate-y-4"
              x-transition:enter-end="opacity-100 translate-y-0"
              class="md:hidden bg-white border-b border-slate-100 absolute w-full px-6 py-8 shadow-2xl">
-            <a href="{{ route('login') }}" class="block text-center py-4 bg-blue-600 text-white rounded-xl text-sm font-bold tracking-widest uppercase">LOGIN PORTAL</a>
+            @if(Request::is('lapor*'))
+                <a href="{{ url('/') }}" class="block text-center py-4 bg-[#0B2A4A] text-white rounded-xl text-sm font-bold tracking-widest uppercase">BERANDA UTAMA</a>
+            @else
+                <a href="{{ route('login') }}" class="block text-center py-4 bg-blue-600 text-white rounded-xl text-sm font-bold tracking-widest uppercase">LOGIN PORTAL</a>
+            @endif
         </div>
     </nav>
 
@@ -94,7 +117,7 @@
                 <div class="lg:col-span-3 lg:offset-1">
                     <h4 class="text-slate-900 font-bold mb-8 uppercase tracking-[0.2em] text-xs">Akses Navigasi</h4>
                     <ul class="space-y-5">
-                        <li><a href="{{ route('landing') }}" class="text-slate-500 hover:text-blue-600 transition font-semibold text-sm">Beranda Utama</a></li>
+                        <li><a href="{{ url('/') }}" class="text-slate-500 hover:text-blue-600 transition font-semibold text-sm">Beranda Utama</a></li>
                         <li><a href="{{ route('lapor.public') }}" class="text-slate-500 hover:text-blue-600 transition font-semibold text-sm">Pelaporan Publik</a></li>
                         <li><a href="{{ route('login') }}" class="text-slate-500 hover:text-blue-600 transition font-semibold text-sm">Login Petugas</a></li>
                     </ul>

@@ -7,7 +7,7 @@
         <div class="max-w-5xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div>
                 <nav class="flex mb-3 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
-                    <a href="{{ route('admin.maintenance.index') }}" class="hover:text-[#0B2A4A] transition-colors">Monitoring</a>
+                    <a href="{{ url()->previous() }}" class="hover:text-[#0B2A4A] transition-colors">Kembali</a>
                     <span class="mx-3 text-slate-300">/</span>
                     <span class="text-[#0B2A4A]">Detail Penugasan</span>
                 </nav>
@@ -31,7 +31,7 @@
                 <span class="{{ $statusColor }} text-white text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-full shadow-lg">
                     Status: {{ strtoupper($ticket->status) }}
                 </span>
-                <a href="{{ route('admin.maintenance.index') }}" class="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-[#0B2A4A] transition-colors">
+                <a href="{{ url()->previous() }}" class="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-[#0B2A4A] transition-colors">
                     ← Kembali
                 </a>
             </div>
@@ -49,7 +49,6 @@
                     <div class="space-y-4">
                         <div class="relative group">
                             @php
-                                // AMBIL DATA DARI LAPORAN (REPORT)
                                 $fotoLaporan = ($ticket->report && $ticket->report->foto) 
                                                ? asset('storage/' . $ticket->report->foto) 
                                                : ($ticket->foto_awal ? asset('storage/' . $ticket->foto_awal) : null);
@@ -67,7 +66,6 @@
                         <div class="p-4 bg-white/5 rounded-2xl border border-white/10">
                             <p class="text-[9px] font-black uppercase text-blue-400 mb-1">Lokasi Laporan</p>
                             <p class="text-[10px] font-bold text-white mb-2 leading-relaxed">
-                                {{-- AMBIL DATA DARI LAPORAN (REPORT) --}}
                                 {{ $ticket->report->location_address ?? ($ticket->location_address ?? 'Alamat tidak spesifik') }}
                             </p>
                             
@@ -117,7 +115,6 @@
                         <div>
                             <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Kategori Aset</p>
                             <p class="text-xs font-bold text-[#0B2A4A] bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                {{-- AMBIL DARI REPORT --}}
                                 @if($ticket->report && $ticket->report->category)
                                     {{ strtoupper($ticket->report->category) }}
                                 @else
@@ -128,7 +125,6 @@
                         <div>
                             <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Jenis Spesifik</p>
                             <p class="text-xs font-bold text-[#0B2A4A] bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                {{-- AMBIL DARI REPORT --}}
                                 {{ strtoupper($ticket->report->jenis_aset ?? ($ticket->jenis_aset ?? '-')) }}
                             </p>
                         </div>
@@ -153,13 +149,13 @@
                         <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Isi Laporan / Keluhan Masyarakat</p>
                         <div class="bg-slate-50 rounded-2xl p-6 border border-slate-100 min-h-[100px]">
                             <p class="text-xs text-slate-600 leading-relaxed italic">
-                                {{-- MENAMPILKAN DESKRIPSI DARI REPORT --}}
                                 "{{ $ticket->report->description ?? ($ticket->report->isi_laporan ?? ($ticket->description ?? 'Tidak ada detail keluhan.')) }}"
                             </p>
                         </div>
                     </div>
 
-                    {{-- TOMBOL SHARE WA --}}
+                    {{-- TOMBOL SHARE WA (Hanya muncul jika belum selesai) --}}
+                    @if(!in_array(strtolower($ticket->status), ['finished', 'selesai', 'baik']))
                     <div class="mb-10 pt-6 border-t border-dashed border-slate-200">
                         @php
                             $waMessage = "📢 *INSTRUKSI PERBAIKAN ASSET*\n\n"
@@ -180,11 +176,15 @@
                         </a>
                     </div>
 
-                    {{-- Form Penyelesaian --}}
-                    @if(!in_array(strtolower($ticket->status), ['finished', 'selesai', 'baik']))
+                    {{-- Form Penyelesaian (Support Petugas/Admin) --}}
                     <div class="pt-8 border-t border-slate-100">
                         <p class="text-[11px] font-black text-[#0B2A4A] uppercase tracking-widest mb-6">Laporan Penyelesaian Seksi</p>
-                        <form action="{{ route('admin.maintenance.updateStatus', $ticket->id) }}" method="POST" enctype="multipart/form-data">
+                        @php
+                            $routeAction = Auth::user()->hasRole('admin') 
+                                           ? route('admin.maintenance.updateStatus', $ticket->id) 
+                                           : route('petugas.tugas.updateStatus', $ticket->id);
+                        @endphp
+                        <form action="{{ $routeAction }}" method="POST" enctype="multipart/form-data">
                             @csrf
                             @method('PATCH')
                             <input type="hidden" name="status" value="Baik">
@@ -193,12 +193,13 @@
                                 <div>
                                     <label class="block text-[10px] font-black text-slate-400 uppercase mb-2">Upload Foto Hasil (Sesudah)</label>
                                     <input type="file" name="foto_perbaikan" required 
-                                        class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-black file:uppercase file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                                        class="w-full text-xs text-slate-900 font-medium file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-black file:uppercase file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
                                 </div>
                                 <div>
                                     <label class="block text-[10px] font-black text-slate-400 uppercase mb-2">Catatan Teknis / Material Diganti</label>
+                                    {{-- PERBAIKAN: Tambah text-slate-900 dan bg-white agar teks terlihat --}}
                                     <textarea name="completion_notes" rows="3" required placeholder="Contoh: Lampu diganti baru..."
-                                        class="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs focus:ring-2 focus:ring-blue-500 transition-all outline-none"></textarea>
+                                        class="w-full bg-white border border-slate-200 rounded-xl p-4 text-xs text-slate-900 font-medium focus:ring-2 focus:ring-blue-500 transition-all outline-none"></textarea>
                                 </div>
                                 <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black uppercase text-[11px] py-4 rounded-xl shadow-lg transition-all tracking-widest">
                                     <i class="fas fa-check-circle mr-2"></i> Konfirmasi Selesai

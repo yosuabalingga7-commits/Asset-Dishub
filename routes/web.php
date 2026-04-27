@@ -15,6 +15,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Petugas\TugasController;
 use App\Http\Controllers\Admin\UserManagementController;
+use Illuminate\Support\Facades\Auth; // Tambahan
 
 /*
 |--------------------------------------------------------------------------
@@ -44,6 +45,18 @@ Route::get('/api/asets-map', [AsetApiController::class, 'getAllAssets'])->name('
 // --- AREA TERPROTEKSI (WAJIB LOGIN) ---
 Route::middleware(['auth'])->group(function () {
 
+    // --- SISTEM NOTIFIKASI (Global untuk semua user login) ---
+    Route::get('/notifications/{id}/read', function ($id) {
+        $notification = Auth::user()->notifications()->findOrFail($id);
+        $notification->markAsRead();
+        return redirect($notification->data['url'] ?? route('dashboard'));
+    })->name('notifications.read');
+
+    // UPDATE: Route Detail Maintenance dipindah ke sini agar bisa diakses Super Admin & Seksi
+    Route::get('/admin/maintenance/{id}/detail', [MaintenanceController::class, 'show'])
+        ->middleware('role:super_admin,seksi')
+        ->name('admin.maintenance.show');
+
     // --- AREA KHUSUS SUPER ADMIN ---
     Route::prefix('admin')->middleware('role:super_admin')->group(function () {
         
@@ -62,6 +75,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/users/store', [UserManagementController::class, 'store'])->name('admin.users.store');
         Route::get('/users/{id}/settings', [UserManagementController::class, 'settings'])->name('admin.users.settings');
         Route::put('/users/{id}', [UserManagementController::class, 'update'])->name('admin.users.update');
+        Route::get('/users/{id}/edit', [UserManagementController::class, 'edit'])->name('admin.users.edit');
         Route::delete('/users/{id}', [UserManagementController::class, 'destroy'])->name('admin.users.destroy');
         Route::patch('/users/{id}/toggle-status', [UserManagementController::class, 'toggleStatus'])->name('admin.users.toggle');
 
@@ -100,7 +114,6 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/maintenance/store', [MaintenanceController::class, 'store'])->name('admin.maintenance.store');
         Route::get('/maintenance/{id}/edit', [MaintenanceController::class, 'edit'])->name('admin.maintenance.edit');
         Route::put('/maintenance/{id}', [MaintenanceController::class, 'update'])->name('admin.maintenance.update');
-        Route::get('/maintenance/{id}/detail', [MaintenanceController::class, 'show'])->name('admin.maintenance.show');
         Route::patch('/maintenance/{id}/update-status', [MaintenanceController::class, 'updateStatus'])->name('admin.maintenance.updateStatus');
         
         // --- MODUL LAPORAN PETUGAS & ACTIVITY LOG ---
@@ -110,10 +123,11 @@ Route::middleware(['auth'])->group(function () {
     });
 
     // --- AREA KHUSUS SEKSI / PETUGAS LAPANGAN ---
-    // Update: Prefix diubah ke admin/petugas agar sinkron dengan yang diakses ketua Bos
     Route::prefix('admin/petugas')->middleware('role:seksi')->group(function () {
         Route::get('/tugas-tersedia', [TugasController::class, 'tersedia'])->name('petugas.tersedia');
         Route::get('/tugas-selesai', [TugasController::class, 'selesai'])->name('petugas.selesai');
-        Route::post('/update-tugas', [TugasController::class, 'updateStatus'])->name('petugas.update-tugas');
+        
+        // PERBAIKAN: POST diubah menjadi PATCH agar sesuai dengan @method('PATCH') di View show.blade.php
+        Route::patch('/update-tugas/{id}', [TugasController::class, 'updateStatus'])->name('petugas.tugas.updateStatus');
     });
 });

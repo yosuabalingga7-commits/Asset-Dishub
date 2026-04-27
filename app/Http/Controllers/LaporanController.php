@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Asset;  
 use App\Models\LaporanMasyarakat; // Ini yang utama kita pakai
+use App\Models\User; // TAMBAHAN UNTUK NOTIFIKASI
+use App\Notifications\MaintenanceNotification; // TAMBAHAN UNTUK NOTIFIKASI
 use Illuminate\Support\Str;          
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Http; // WAJIB ADA UNTUK KIRIM WA
@@ -78,7 +80,7 @@ class LaporanController extends Controller
             }
 
             // 4. Simpan ke Database
-            LaporanMasyarakat::create([
+            $laporan = LaporanMasyarakat::create([
                 'ticket_number' => $ticketNumber,
                 'nama_pelapor' => $request->nama_pelapor,
                 'kontak_pelapor' => $request->kontak_pelapor,
@@ -92,6 +94,18 @@ class LaporanController extends Controller
                 'foto' => $fotoPath,
                 'status' => 'masuk',
             ]);
+
+            // --- KIRIM NOTIFIKASI INTERNAL KE SUPER ADMIN ---
+            $superAdmins = User::where('role', 'super_admin')->get();
+            $notifData = [
+                'title' => 'LAPORAN MASYARAKAT BARU',
+                'message' => 'Laporan baru dari ' . $request->nama_pelapor . ' mengenai ' . $request->judul_laporan,
+                'url' => route('admin.pengaduan.show', $laporan->id),
+                'type' => 'info'
+            ];
+            foreach ($superAdmins as $admin) {
+                $admin->notify(new MaintenanceNotification($notifData));
+            }
 
             // --- BAGIAN TAMBAHAN: KIRIM NOTIFIKASI WHATSAPP KE ADMIN ---
             // Dibungkus Try-Catch agar jika server Node.js mati, laporan tetap tersimpan di DB

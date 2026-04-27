@@ -34,7 +34,7 @@
             <input type="hidden" name="longitude" value="{{ $laporan->lng ?? ($maintenance->longitude ?? '') }}">
             <input type="hidden" name="category_id" id="category_id_hidden" value="{{ old('category_id', $maintenance->category_id ?? '') }}">
             
-            {{-- CRITICAL FIX: Input send_wa statis agar tidak gagal saat submit cepat --}}
+            {{-- CRITICAL FIX --}}
             <input type="hidden" name="send_wa" id="input_send_wa" value="0">
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -109,13 +109,13 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                             <div class="space-y-6">
                                 <div>
-                                    <label class="text-[10px] font-black text-slate-400 uppercase mb-4 block tracking-widest italic">1. Seksi Bertanggung Jawab</label>
+                                    <label class="text-[10px] font-black text-slate-400 uppercase mb-4 block tracking-widest italic">1. Petugas Pelaksana (Seksi)</label>
                                     <select name="user_id" id="seksi_select" required class="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-[#0B2A4A] text-xs font-bold focus:ring-2 focus:ring-[#25D366] outline-none transition-all">
-                                        <option value="">-- Pilih Seksi --</option>
-                                        @foreach($listSeksi as $seksi)
-                                            <option value="{{ $seksi->id }}" 
-                                                {{ (old('user_id', $maintenance->user_id ?? '') == $seksi->id) ? 'selected' : '' }}>
-                                                🏢 {{ strtoupper($seksi->name) }}
+                                        <option value="">-- Pilih Orang Yang Ditugaskan --</option>
+                                        @foreach($listSeksi as $petugas)
+                                            <option value="{{ $petugas->id }}" 
+                                                {{ (old('user_id', $maintenance->user_id ?? '') == $petugas->id) ? 'selected' : '' }}>
+                                                👤 {{ strtoupper($petugas->name) }} | BIDANG: {{ strtoupper($petugas->seksi->nama_seksi ?? 'UMUM') }}
                                             </option>
                                         @endforeach
                                     </select>
@@ -205,10 +205,8 @@
         jenisSelect.innerHTML = '<option value="">-- Pilih Jenis --</option>';
         if(!selectedKat) return;
 
-        const cleanSelected = selectedKat.replace(/[()]/g, '').toLowerCase().trim();
         let foundKey = Object.keys(dbJenis).find(k => {
-            let cleanKey = k.replace(/[()]/g, '').toLowerCase().trim();
-            return cleanKey.includes(cleanSelected) || cleanSelected.includes(cleanKey);
+            return selectedKat.includes(k) || k.includes(selectedKat);
         });
 
         if(foundKey && dbJenis[foundKey]) {
@@ -221,7 +219,6 @@
         }
     });
 
-    // FUNGSI WHATSAPP FIXED
     function kirimWhatsApp() {
         const seksiSelect = document.getElementById('seksi_select');
         const btnKirimWa = document.getElementById('btnKirimWa');
@@ -230,7 +227,7 @@
         const inputSendWa = document.getElementById('input_send_wa');
         
         if (!seksiSelect.value) {
-            alert('Pilih Seksi dulu!');
+            alert('Pilih Petugas dulu!');
             seksiSelect.focus();
             return;
         }
@@ -241,10 +238,7 @@
             return;
         }
 
-        // Set value 1 ke input statis
         inputSendWa.value = '1';
-
-        // UI Feedback
         btnKirimWa.disabled = true;
         btnKirimWa.classList.add('opacity-50', 'cursor-not-allowed');
         btnText.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Memproses...';
@@ -259,7 +253,7 @@
             const waUrl = "{!! session('open_wa') !!}";
             const waWindow = window.open(waUrl, '_blank');
             if(!waWindow || waWindow.closed || typeof waWindow.closed=='undefined') {
-                alert('Pesan berhasil disimpan! Namun browser memblokir pop-up WhatsApp. Silakan izinkan pop-up di pengaturan browser Anda.');
+                alert('Pesan berhasil disimpan! Namun browser memblokir pop-up WhatsApp.');
             }
         @endif
     });
