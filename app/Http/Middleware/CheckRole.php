@@ -35,7 +35,14 @@ class CheckRole
             return $next($request);
         }
 
-        // 3. Jika tidak punya akses, arahkan ke dashboard masing-masing dengan pesan error
+        // 3. Jika tidak punya akses, arahkan ke halaman sesuai role atau dashboard utama
+        if ($user->role == 'kadis') {
+            return redirect()->route('kadis.dashboard')->with('error', 'Anda tidak memiliki akses ke halaman tersebut.');
+        }
+        if ($user->role == 'petugas_lapangan') {
+            return redirect()->route('petugas.lapangan.dashboard')->with('error', 'Anda tidak memiliki akses ke halaman tersebut.');
+        }
+
         return redirect()->route('dashboard')->with('error', 'Anda tidak memiliki akses ke halaman tersebut.');
     }
 }

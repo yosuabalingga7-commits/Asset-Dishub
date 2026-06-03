@@ -22,10 +22,11 @@ return new class extends Migration
             $table->string('password_plain')->nullable(); // UNTUK ADMIN MELIHAT PASSWORD ASLI
             
             /** * ROLE MANAGEMENT
-             * super_admin: Manajemen penuh aset & buat tiket/tugas.
+             * admin: Manajemen penuh aset & buat tiket/tugas.
              * seksi: Monitoring & eksekusi tugas per bidang.
+             * kadis: Kepala Dinas (view only untuk dashboard eksekutif)
              */
-            $table->enum('role', ['super_admin', 'seksi'])->default('seksi');
+            $table->enum('role', ['admin', 'seksi', 'kadis'])->default('seksi');
             
             // --- IDENTITAS SEKSI (WAJIB UNTUK PEMBAGIAN TUGAS) ---
             $table->unsignedBigInteger('seksi_id')->nullable(); 
@@ -37,6 +38,15 @@ return new class extends Migration
             $table->string('foto')->nullable(); 
             $table->string('status')->default('aktif'); // KOLOM BARU: Untuk indikator warna di tabel (Aktif/Nonaktif)
             $table->boolean('is_active')->default(true);
+            
+            // Profile Photo Path
+            $table->string('profile_photo_path', 2048)->nullable();
+            
+            // Last Login IP Address untuk logging aktivitas
+            $table->string('last_login_ip', 45)->nullable();
+            
+            // Last Login Time
+            $table->timestamp('last_login_at')->nullable();
 
             $table->rememberToken();
             $table->timestamps();

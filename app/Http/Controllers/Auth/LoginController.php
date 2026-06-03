@@ -5,77 +5,48 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Http\RedirectResponse;
 
 class LoginController extends Controller
 {
-    /**
-     * Menampilkan halaman login LINTAS.
-     */
     public function showLogin()
     {
-        // Pastikan file view ini ada di resources/views/auth/login.blade.php
         return view('auth.login');
     }
 
-    /**
-     * Menangani proses autentikasi.
-     */
-    public function login(Request $request): RedirectResponse
+    public function login(Request $request)
     {
-        // 1. Validasi Input (Sekarang menggunakan nip)
         $credentials = $request->validate([
-            'nip'      => ['required', 'string'],
-            'password' => ['required', 'string'],
+            'nip'      => 'required',
+            'password' => 'required',
         ]);
 
-        // 2. Percobaan Login
-        // Menggunakan 'nip' sesuai dengan struktur tabel user terbaru
-        if (Auth::attempt($credentials, $request->filled('remember'))) {
+        if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
 
+            // Logika Redirect Berdasarkan Role
             $user = Auth::user();
-
-            // 3. Cek Status Akun (Aktif/Nonaktif)
-            if (!$user->is_active) {
-                Auth::logout();
-                return back()->withErrors([
-                    'nip' => 'Akun Anda dinonaktifkan. Silakan hubungi Super Admin.',
-                ]);
+            if ($user->role === 'kadis') {
+                return redirect()->intended(route('kadis.dashboard'));
             }
-
-            // 4. Logika Redirect Berdasarkan Role
-            if ($user->role === 'super_admin') {
-                return redirect()->intended('/admin/dashboard')
-                    ->with('success', 'Selamat Datang Kembali, Super Admin!');
-            } 
-            
             if ($user->role === 'seksi') {
-                // Sesuai permintaan: Masuk ke halaman tugas tersedia
-                return redirect()->intended('/admin/petugas/tugas-tersedia')
-                    ->with('success', 'Selamat Bekerja, Kepala Seksi.');
+                return redirect()->intended(route('petugas.tersedia'));
             }
-
-            // Default redirect untuk role petugas atau lainnya
-            return redirect()->intended('/dashboard');
+            if ($user->role === 'petugas_lapangan') {
+                return redirect()->intended(route('petugas.lapangan.dashboard'));
+            }
+            return redirect()->intended(route('admin.dashboard'));
         }
 
-        // 5. Jika Gagal Login
         return back()->withErrors([
-            'nip' => 'NIP atau password yang Anda masukkan salah.',
-        ])->onlyInput('nip');
+            'nip' => 'NIP atau Password salah.',
+        ])->withInput($request->only('nip'));
     }
 
-    /**
-     * Menangani proses logout.
-     */
-    public function logout(Request $request): RedirectResponse
+    public function logout(Request $request)
     {
         Auth::logout();
-
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-
-        return redirect('/login')->with('success', 'Anda telah berhasil keluar dari sistem.');
+        return redirect('/');
     }
 }

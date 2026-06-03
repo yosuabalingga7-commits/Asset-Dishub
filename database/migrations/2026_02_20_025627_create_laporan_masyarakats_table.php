@@ -38,6 +38,9 @@ return new class extends Migration
             $table->string('kepemilikan')->nullable(); // dishub atau umum
             $table->text('catatan_admin')->nullable();
             
+            // IP Address untuk logging aktivitas
+            $table->string('ip_address', 45)->nullable();
+            
             $table->timestamps();
         });
     }

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LINTAS - Layanan Inventaris & Tata Aset Sistem Dishub KBB</title>
+    <title>LINTAS - Layanan Inventaris & Sistem Tata Aset Dishub KBB</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -41,32 +41,33 @@
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
-<body class="bg-white text-slate-900 antialiased" x-data="{ mobileMenuOpen: false, scrolled: false }" @scroll.window="scrolled = (window.pageYOffset > 20)">
+<body class="bg-white text-slate-900 antialiased" x-data="{ mobileMenuOpen: false }">
 
-    <nav :class="scrolled ? 'bg-white/95 backdrop-blur-xl border-b border-slate-100 py-3 shadow-md' : 'bg-transparent py-6'" 
-         class="fixed w-full z-[1000] transition-all duration-500">
+    {{-- NAVBAR SOLID PUTIH - SELALU SAMA SAAT SCROLL ATAUPUN TIDAK --}}
+    <nav class="fixed top-0 left-0 w-full z-[1000] bg-white shadow-md border-b border-slate-200">
         <div class="max-w-7xl mx-auto px-6 lg:px-8">
-            <div class="flex justify-between items-center">
+            <div class="flex justify-between items-center h-20">
                 
                 <div class="flex items-center gap-4">
                     <img src="{{ asset('img/logo kbb.png') }}" alt="Logo KBB" class="h-12 w-auto">
                     <div class="flex flex-col border-l-2 border-slate-200 pl-4">
-                        <span class="text-2xl font-black tracking-tighter leading-none text-slate-900">LINTAS</span>
+                 <span class="text-2xl font-black tracking-tighter leading-none">
+                 <span class="text-slate-900">LIN</span><span class="text-blue-600">TAS.</span>
+                </span>
                         <span class="text-[10px] font-bold text-blue-600 uppercase tracking-[0.2em]">Bandung Barat</span>
                     </div>
                 </div>
 
                 <div class="hidden md:flex items-center">
-                    {{-- SOLUSI: Cek jika di halaman lapor, tampilkan Beranda. Jika tidak, tampilkan Login --}}
                     @if(Request::is('lapor*'))
                         <a href="{{ url('/') }}" 
-                           class="px-6 py-2.5 bg-[#0B2A4A] hover:bg-[#F4B400] text-white hover:text-[#0B2A4A] text-xs font-bold rounded-full transition-all duration-300 shadow-lg uppercase tracking-widest">
-                            Beranda Utama
+                           class="px-6 py-2.5 bg-[#0B2A4A] hover:bg-[#F4B400] text-white hover:text-[#0B2A4A] text-xs font-bold rounded-full transition-all duration-300 shadow-md uppercase tracking-widest">
+                             Beranda
                         </a>
                     @else
                         <a href="{{ route('login') }}" 
-                           class="px-6 py-2.5 bg-slate-900 hover:bg-blue-600 text-white text-xs font-bold rounded-full transition-all duration-300 shadow-lg shadow-slate-900/20 uppercase tracking-widest">
-                            Login Portal
+                           class="px-6 py-2.5 bg-slate-900 hover:bg-blue-600 text-white text-xs font-bold rounded-full transition-all duration-300 shadow-md uppercase tracking-widest">
+                             Login
                         </a>
                     @endif
                 </div>
@@ -84,59 +85,70 @@
             </div>
         </div>
 
+        {{-- MOBILE MENU DROPDOWN --}}
         <div x-show="mobileMenuOpen" x-cloak
              x-transition:enter="transition ease-out duration-200"
              x-transition:enter-start="opacity-0 -translate-y-4"
              x-transition:enter-end="opacity-100 translate-y-0"
-             class="md:hidden bg-white border-b border-slate-100 absolute w-full px-6 py-8 shadow-2xl">
+             class="md:hidden bg-white border-t border-slate-100 absolute w-full px-6 py-8 shadow-xl">
             @if(Request::is('lapor*'))
-                <a href="{{ url('/') }}" class="block text-center py-4 bg-[#0B2A4A] text-white rounded-xl text-sm font-bold tracking-widest uppercase">BERANDA UTAMA</a>
+                <a href="{{ url('/') }}" class="block text-center py-4 bg-[#0B2A4A] text-white rounded-xl text-sm font-bold tracking-widest uppercase">BERANDA</a>
             @else
-                <a href="{{ route('login') }}" class="block text-center py-4 bg-blue-600 text-white rounded-xl text-sm font-bold tracking-widest uppercase">LOGIN PORTAL</a>
+                <a href="{{ route('login') }}" class="block text-center py-4 bg-slate-900 text-white rounded-xl text-sm font-bold tracking-widest uppercase">LOGIN PORTAL</a>
             @endif
         </div>
     </nav>
 
-    <main>
+    {{-- MAIN CONTENT DENGAN PADDING TOP YANG TEPAT --}}
+    <main class="pt-20">
         @yield('content')
     </main>
 
     <footer class="bg-slate-50 text-slate-900 pt-24 pb-12 border-t border-slate-200">
         <div class="max-w-7xl mx-auto px-8">
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-16 mb-20">
-                <div class="lg:col-span-5">
-                    <div class="flex items-center gap-4 mb-8">
-                        <img src="{{ asset('img/logodishub.png') }}" alt="Logo Dishub" class="h-10">
-                        <span class="text-3xl font-black tracking-tighter italic text-slate-900">LINTAS</span>
+                <div class="lg:col-span-6">
+                    {{-- Bagian Logo & Tulisan LINTAS --}}
+                    <div class="flex items-center gap-8 mb-10">
+                        {{-- Logo Dishub diperbesar signifikan agar teks 'Bandung Barat' di bawahnya jelas --}}
+                        <img src="{{ asset('img/logodishub.png') }}" alt="Logo Dishub" class="h-32 md:h-48 w-auto object-contain shrink-0">
+                        
+                        {{-- Garis Pemisah yang disesuaikan tingginya --}}
+                        <div class="h-20 w-px bg-slate-300 hidden md:block"></div>
+
+                        {{-- Tulisan LINTAS diperbesar agar seimbang dengan logo --}}
+                       <span class="text-5xl md:text-7xl font-black tracking-tighter leading-none">
+                        <span class="text-slate-900">LIN</span><span class="text-blue-600">TAS.</span>
+                     </span>
                     </div>
-                    <p class="text-slate-500 text-lg leading-relaxed mb-10 font-medium">
-                        Layanan Inventaris & Tata Aset Sistem (LINTAS) merupakan instrumen digital strategis milik Dinas Perhubungan Kabupaten Bandung Barat.
+                    <p class="text-slate-500 text-lg leading-relaxed mb-10 font-medium max-w-xl">
+                        Layanan Inventaris & Sistem Tata Aset (LINTAS) merupakan instrumen digital strategis milik Dinas Perhubungan Kabupaten Bandung Barat.
                     </p>
                 </div>
 
-                <div class="lg:col-span-3 lg:offset-1">
+                <div class="lg:col-span-3">
                     <h4 class="text-slate-900 font-bold mb-8 uppercase tracking-[0.2em] text-xs">Akses Navigasi</h4>
                     <ul class="space-y-5">
-                        <li><a href="{{ url('/') }}" class="text-slate-500 hover:text-blue-600 transition font-semibold text-sm">Beranda Utama</a></li>
+                        <li><a href="{{ url('/') }}" class="text-slate-500 hover:text-blue-600 transition font-semibold text-sm">Beranda</a></li>
                         <li><a href="{{ route('lapor.public') }}" class="text-slate-500 hover:text-blue-600 transition font-semibold text-sm">Pelaporan Publik</a></li>
                         <li><a href="{{ route('login') }}" class="text-slate-500 hover:text-blue-600 transition font-semibold text-sm">Login Petugas</a></li>
                     </ul>
                 </div>
 
                 <div class="lg:col-span-3">
-                    <h4 class="text-slate-900 font-bold mb-8 uppercase tracking-[0.2em] text-xs">Kontak & Lokasi</h4>
+                    <h4 class="text-slate-900 font-bold mb-8 uppercase tracking-[0.2em] text-xs">Lokasi Kantor</h4>
                     <div class="space-y-6">
                         <div class="flex gap-4">
-                            <div class="w-10 h-10 rounded-xl bg-white flex items-center justify-center shrink-0 border border-slate-200">
+                            <div class="w-10 h-10 rounded-xl bg-white flex items-center justify-center shrink-0 border border-slate-200 shadow-sm">
                                 <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                             </div>
-                            <p class="text-slate-500 text-xs leading-relaxed font-medium">Ciwaruga, Parongpong, KBB.</p>
+                            <p class="text-slate-500 text-xs leading-relaxed font-semibold">Jl. Gandasari No.151, Gandasari, Kec. Katapang, Kabupaten Bandung, Jawa Barat 40921</p>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="border-t border-slate-200 pt-12 text-center">
-                <p class="text-slate-400 text-[10px] font-bold uppercase tracking-[0.4em]">&copy; {{ date('Y') }} LINTAS KBB.</p>
+                <p class="text-slate-400 text-[10px] font-bold uppercase tracking-[0.4em]">&copy; {{ date('Y') }} LINTAS KBB — Dinas Perhubungan Kabupaten Bandung Barat.</p>
             </div>
         </div>
     </footer>

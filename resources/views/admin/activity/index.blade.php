@@ -27,10 +27,10 @@
             
             <div class="flex gap-2">
                 <div class="relative group">
-                    <input type="text" placeholder="Cari log..." class="bg-white border border-slate-200 rounded-xl px-10 py-2.5 text-xs font-semibold w-64 focus:ring-2 focus:ring-indigo-500 outline-none transition-all shadow-sm">
+                    <input type="text" id="searchLog" placeholder="Cari log..." class="bg-white border border-slate-200 rounded-xl px-10 py-2.5 text-xs font-semibold w-64 focus:ring-2 focus:ring-indigo-500 outline-none transition-all shadow-sm">
                     <i class="fas fa-search absolute left-4 top-3.5 text-slate-400 text-xs"></i>
                 </div>
-                <button class="bg-white border border-slate-200 p-2.5 rounded-xl text-slate-500 hover:bg-slate-50 shadow-sm"><i class="fas fa-filter"></i></button>
+                <button onclick="window.location.reload()" class="bg-white border border-slate-200 p-2.5 rounded-xl text-slate-500 hover:bg-slate-50 shadow-sm"><i class="fas fa-sync-alt"></i></button>
             </div>
         </div>
 
@@ -39,20 +39,20 @@
             <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
                 <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Aktivitas</p>
                 <h3 class="text-2xl font-black text-[#0B2A4A]">{{ $stats['total'] }}</h3>
-                <p class="text-[8px] text-emerald-600 font-bold mt-1"><i class="fas fa-caret-up mr-1"></i> 12% Dari bulan lalu</p>
+                <p class="text-[8px] text-emerald-600 font-bold mt-1"><i class="fas fa-database mr-1"></i> Data realtime</p>
             </div>
             <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm border-l-4 border-l-rose-500">
-                <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Gagal Login</p>
+                <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Gagal/Error</p>
                 <h3 class="text-2xl font-black text-rose-600">{{ $stats['failed'] }}</h3>
-                <p class="text-[8px] text-slate-400 font-bold mt-1 uppercase">Butuh Atensi Keamanan</p>
+                <p class="text-[8px] text-slate-400 font-bold mt-1 uppercase">Butuh Atensi</p>
             </div>
             <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
                 <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Data Dihapus</p>
                 <h3 class="text-2xl font-black text-slate-800">{{ $stats['danger'] }}</h3>
-                <p class="text-[8px] text-slate-400 font-bold mt-1 uppercase">Aktivitas Irreversibel</p>
+                <p class="text-[8px] text-slate-400 font-bold mt-1 uppercase">Aktivitas Hapus</p>
             </div>
             <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-                <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Validasi Berkas</p>
+                <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Validasi Laporan</p>
                 <h3 class="text-2xl font-black text-indigo-600">{{ $stats['validate'] }}</h3>
                 <p class="text-[8px] text-slate-400 font-bold mt-1 uppercase">Kinerja Admin</p>
             </div>
@@ -60,19 +60,18 @@
     </div>
 
     {{-- 2. ACTIVITY LIST --}}
-    <div class="space-y-3">
-        @foreach($logs as $log)
+    <div class="space-y-4" id="logContainer">
+        @forelse($logs as $log)
         @php
             $config = [
                 'DELETE'   => ['border' => 'border-l-rose-500', 'bg' => 'bg-rose-50', 'text' => 'text-rose-600', 'icon' => 'fa-trash-alt'],
-                'UPDATE'   => ['border' => 'border-l-blue-500', 'bg' => 'bg-blue-50', 'text' => 'text-blue-600', 'icon' => 'fa-edit-alt'],
+                'UPDATE'   => ['border' => 'border-l-blue-500', 'bg' => 'bg-blue-50', 'text' => 'text-blue-600', 'icon' => 'fa-edit'],
                 'CREATE'   => ['border' => 'border-l-emerald-500', 'bg' => 'bg-emerald-50', 'text' => 'text-emerald-600', 'icon' => 'fa-plus-circle'],
                 'VALIDASI' => ['border' => 'border-l-amber-500', 'bg' => 'bg-amber-50', 'text' => 'text-amber-500', 'icon' => 'fa-check-double'],
-                'LOGIN'    => ['border' => 'border-l-slate-400', 'bg' => 'bg-slate-50', 'text' => 'text-slate-400', 'icon' => 'fa-key'],
+                'LOGIN'    => ['border' => 'border-l-slate-400', 'bg' => 'bg-slate-50', 'text' => 'text-slate-500', 'icon' => 'fa-key'],
             ];
             $style = $config[$log['type']] ?? $config['LOGIN'];
             
-            // Logika Nama Risiko Bahasa Indonesia
             $riskLabel = match($log['risk']) {
                 'CRITICAL' => 'RISIKO KRITIS',
                 'HIGH'     => 'RISIKO TINGGI',
@@ -81,7 +80,6 @@
                 default    => 'RISIKO NORMAL',
             };
 
-            // Warna Risiko
             $riskColor = match($log['risk']) {
                 'HIGH', 'CRITICAL' => 'bg-rose-100 text-rose-700 border-rose-200',
                 'MEDIUM' => 'bg-amber-100 text-amber-700 border-amber-200',
@@ -89,66 +87,70 @@
             };
         @endphp
 
-        <div class="bg-white border border-slate-100 border-l-[3.5px] {{ $style['border'] }} rounded-xl shadow-sm hover:shadow-md transition-all group cursor-pointer">
-            <div class="flex flex-col lg:flex-row lg:items-center p-5 gap-6">
-                
-                {{-- LEFT: USER --}}
-                <div class="flex items-center gap-4 min-w-[200px]">
-                    <div class="w-10 h-10 rounded-lg {{ $style['bg'] }} {{ $style['text'] }} flex items-center justify-center text-sm shadow-inner">
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all group log-item"
+             data-search="{{ strtolower($log['user'] . ' ' . $log['action'] . ' ' . $log['target'] . ' ' . $log['modul']) }}">
+            
+            <div class="flex flex-col md:flex-row p-5 gap-4">
+                {{-- Profile Section --}}
+                <div class="flex items-center gap-4 md:w-1/4">
+                    <div class="w-12 h-12 rounded-full {{ $style['bg'] }} {{ $style['text'] }} flex items-center justify-center text-lg">
                         <i class="fas {{ $style['icon'] }}"></i>
                     </div>
                     <div>
-                        <p class="text-[11px] font-black uppercase tracking-tighter">{{ $log['user'] }}</p>
-                        <p class="text-[9px] font-bold text-slate-400 uppercase">{{ $log['role'] }}</p>
+                        <p class="text-xs font-black uppercase text-slate-900">{{ $log['user'] }}</p>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase">{{ $log['role'] }}</p>
                     </div>
                 </div>
 
-                {{-- CENTER: NARRATIVE & MODUL BADGE --}}
-                <div class="flex-1 lg:border-l lg:border-slate-50 lg:pl-6">
-                    <div class="flex items-center gap-2 mb-1.5">
-                        <span class="text-[8px] font-black px-1.5 py-0.5 bg-slate-800 text-white rounded">[{{ $log['modul'] }}]</span>
-                        <span class="text-[8px] font-black px-1.5 py-0.5 border {{ $riskColor }} rounded uppercase tracking-widest">{{ $riskLabel }}</span>
-                        <p class="text-xs font-bold text-slate-700 ml-1">{{ $log['action'] }} <span class="text-indigo-600 underline decoration-indigo-200 underline-offset-4">{{ $log['target'] }}</span></p>
+                {{-- Content Section --}}
+                <div class="md:flex-1 md:border-l md:border-slate-100 md:pl-6">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="text-[9px] font-bold bg-slate-900 text-white px-2 py-0.5 rounded uppercase">{{ $log['modul'] }}</span>
+                        <span class="text-[9px] font-bold px-2 py-0.5 border {{ $riskColor }} rounded uppercase tracking-wider">{{ $riskLabel }}</span>
                     </div>
-                    <p class="text-[10px] font-medium text-slate-400 leading-relaxed truncate max-w-xl">
-                        "{{ $log['desc'] }}"
-                    </p>
+                    <p class="text-xs font-bold text-slate-800 mb-1">{{ $log['action'] }} <span class="text-indigo-600">{{ $log['target'] }}</span></p>
+                    <p class="text-[11px] text-slate-500 italic">"{{ $log['desc'] }}"</p>
                 </div>
 
-                {{-- RIGHT: TIME & STATUS --}}
-                <div class="flex items-center justify-between lg:justify-end gap-8 border-t lg:border-t-0 pt-3 lg:pt-0">
-                    <div class="text-left lg:text-right">
-                        <p class="text-[9px] font-black text-slate-700 uppercase tracking-tighter">{{ $log['time'] }} <span class="text-slate-300 ml-1">WIB</span></p>
-                        <p class="text-[8px] font-bold text-slate-400 tracking-widest uppercase">IP: {{ $log['ip'] }}</p>
-                    </div>
-
-                    <div class="min-w-[80px] text-right">
-                        @if($log['status'] === 'SUCCESS')
-                            <span class="text-emerald-500 text-[10px] font-black uppercase tracking-widest">
-                                <i class="fas fa-check-circle mr-1"></i> Sukses
-                            </span>
-                        @else
-                            <span class="text-rose-500 text-[10px] font-black uppercase tracking-widest">
-                                <i class="fas fa-times-circle mr-1"></i> Gagal
-                            </span>
-                        @endif
-                    </div>
+                {{-- Status & Meta Section --}}
+                <div class="flex md:flex-col justify-between md:justify-center items-end md:items-end gap-2 md:w-40 border-t md:border-t-0 pt-3 md:pt-0">
+                    <p class="text-[10px] font-bold text-slate-400">{{ $log['time'] }} WIB</p>
+                    <p class="text-[9px] font-bold text-slate-300">IP: {{ $log['ip'] }}</p>
+                    @if($log['status'] === 'SUCCESS')
+                        <span class="text-emerald-600 text-[10px] font-black uppercase tracking-widest"><i class="fas fa-check-circle mr-1"></i> Sukses</span>
+                    @else
+                        <span class="text-rose-600 text-[10px] font-black uppercase tracking-widest"><i class="fas fa-times-circle mr-1"></i> Gagal</span>
+                    @endif
                 </div>
             </div>
         </div>
-        @endforeach
+        @empty
+        <div class="bg-white rounded-xl shadow-md border border-slate-100 p-12 text-center">
+            <i class="fas fa-clipboard-list text-5xl text-slate-300 mb-4"></i>
+            <p class="text-slate-400 font-bold text-sm">Belum ada aktivitas yang tercatat</p>
+        </div>
+        @endforelse
     </div>
 
-    {{-- 3. ENTERPRISE FOOTER --}}
+    {{-- 3. PAGINATION --}}
+    @if($logs->hasPages())
     <div class="mt-8 flex justify-between items-center bg-white p-4 rounded-xl border border-slate-100 shadow-sm text-[10px] font-bold text-slate-400 uppercase">
-        <p>Menampilkan 5 aktivitas terbaru dari <span class="text-slate-900">{{ $stats['total'] }}</span> entri audit</p>
+        <p>Menampilkan {{ $logs->firstItem() ?? 0 }} - {{ $logs->lastItem() ?? 0 }} dari {{ $logs->total() }} entri audit</p>
         <div class="flex gap-2">
-            <button class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors">Sebelumnya</button>
-            <button class="px-3 py-1.5 rounded-lg bg-[#0B2A4A] text-white font-black">1</button>
-            <button class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-[#0B2A4A] hover:bg-slate-50 transition-colors">2</button>
-            <button class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-[#0B2A4A] hover:bg-slate-50 transition-colors">3</button>
-            <button class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors">Berikutnya</button>
+            {{ $logs->links('pagination::tailwind') }}
         </div>
     </div>
+    @endif
 </div>
+
+<script>
+    document.getElementById('searchLog')?.addEventListener('keyup', function() {
+        const searchTerm = this.value.toLowerCase();
+        const logItems = document.querySelectorAll('.log-item');
+        logItems.forEach(item => {
+            const searchData = item.getAttribute('data-search') || '';
+            item.style.display = (searchTerm === '' || searchData.includes(searchTerm)) ? '' : 'none';
+        });
+    });
+</script>
 @endsection

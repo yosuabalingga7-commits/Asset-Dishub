@@ -6,8 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\MaintenanceTicket; 
 use App\Models\LaporanMasyarakat;
 use App\Models\Asset;
-use App\Models\User; // TAMBAHAN UNTUK NOTIFIKASI
-use App\Notifications\MaintenanceNotification; // TAMBAHAN UNTUK NOTIFIKASI
+use App\Models\User;
+use App\Notifications\MaintenanceNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -16,18 +16,25 @@ use Carbon\Carbon;
 
 class TugasController extends Controller
 {
-    /**
-     * Menampilkan daftar tugas yang tersedia
-     */
-    public function tersedia()
+    public function tersedia(Request $request)
     {
         $userId = Auth::id();
         
-        $ticketsFromDb = MaintenanceTicket::with(['report', 'asset', 'user'])
+        $query = MaintenanceTicket::with(['report', 'asset.category', 'user'])
             ->where('user_id', $userId)
-            ->whereIn('status', ['pending', 'proses']) 
-            ->orderBy('created_at', 'desc')
-            ->get();
+            ->whereIn('status', ['pending', 'proses']);
+
+        if ($request->filled('prioritas')) {
+            $query->where('priority', $request->prioritas);
+        }
+
+        if ($request->filled('start_date') && $request->filled('end_date')) {
+            $query->whereBetween('created_at', [$request->start_date . ' 00:00:00', $request->end_date . ' 23:59:59']);
+        } elseif ($request->filled('start_date')) {
+            $query->whereDate('created_at', '>=', $request->start_date);
+        }
+
+        $ticketsFromDb = $query->orderBy('created_at', 'desc')->get();
 
         $tasks = $ticketsFromDb->map(function ($ticket) {
             $safeFormat = function($date) {
@@ -41,14 +48,13 @@ class TugasController extends Controller
 
             $statusAsli = $ticket->status;
             
-            // Menggunakan (object) untuk memastikan Blade bisa memanggil dengan ->
             return (object) [
                 'id' => $ticket->id, 
                 'ticket_code' => $ticket->ticket_code ?? ('MNT-' . strtoupper(substr(md5($ticket->id), 0, 8))),
                 'status' => $statusAsli,
                 'prioritas' => $ticket->priority ?? 'NORMAL',
-                'asset' => $ticket->asset, 
-                'jenis_aset' => $ticket->jenis_aset ?? ($ticket->report->jenis_aset ?? 'Aset'),
+                'nama_aset' => $ticket->asset->nama_aset ?? $ticket->jenis_aset ?? 'Aset Umum',
+                'kategori_aset' => $ticket->asset->category->name ?? 'Maintenance',
                 'lokasi' => $ticket->location_address ?? ($ticket->report->alamat ?? ($ticket->latitude . ', ' . $ticket->longitude)),
                 'petugas' => $ticket->user->name ?? 'Belum Ditugaskan',
                 'tgl_laporan' => $safeFormat($ticket->created_at),
@@ -63,25 +69,31 @@ class TugasController extends Controller
         return view('admin.petugas.tugas-tersedia', compact('tasks'));
     }
 
-    /**
-     * Menampilkan daftar tugas yang sudah selesai
-     */
-    public function selesai()
+    // ... (metode selesai dan updateStatus tetap sama)
+    public function selesai(Request $request)
     {
         $userId = Auth::id();
-        
-        $ticketsFromDb = MaintenanceTicket::with(['asset', 'report', 'user'])
+        $query = MaintenanceTicket::with(['asset', 'report', 'user'])
             ->where('user_id', $userId)
-            ->where('status', 'selesai')
-            ->latest()
-            ->get();
+            ->where('status', 'selesai');
 
-        $tasks = $ticketsFromDb->map(function ($ticket) {
+        if ($request->filled('prioritas')) {
+            $query->where('priority', $request->prioritas);
+        }
+
+        if ($request->filled('start_date') && $request->filled('end_date')) {
+            $query->whereBetween('finished_at', [$request->start_date . ' 00:00:00', $request->end_date . ' 23:59:59']);
+        } elseif ($request->filled('start_date')) {
+            $query->whereDate('finished_at', '>=', $request->start_date);
+        }
+
+        $tasks = $query->latest('finished_at')->paginate(10)->through(function ($ticket) {
             return (object) [
                 'id' => $ticket->id,
                 'ticket_code' => $ticket->ticket_code ?? ('MNT-' . $ticket->id),
                 'status' => 'selesai',
                 'asset' => $ticket->asset,
+                'prioritas' => $ticket->priority ?? 'NORMAL',
                 'jenis_aset' => $ticket->jenis_aset ?? ($ticket->report->jenis_aset ?? 'Aset Umum'),
                 'location_address' => $ticket->location_address ?? ($ticket->report->alamat ?? 'Bandung Barat'),
                 'finished_at' => $ticket->finished_at ? Carbon::parse($ticket->finished_at) : null,
@@ -93,9 +105,6 @@ class TugasController extends Controller
         return view('admin.petugas.tugas-selesai', compact('tasks'));
     }
 
-    /**
-     * Update status tugas menjadi Selesai
-     */
     public function updateStatus(Request $request, $id)
     {
         $request->validate([
@@ -106,7 +115,10 @@ class TugasController extends Controller
         DB::beginTransaction();
         try {
             $task = MaintenanceTicket::findOrFail($id);
-            
+            if($task->status == 'selesai') {
+                return back()->with('info', 'Tugas ini sudah berstatus selesai.');
+            }
+
             $task->status = 'selesai';
             $task->completion_notes = $request->completion_notes;
             $task->finished_at = now();
@@ -126,11 +138,10 @@ class TugasController extends Controller
 
             $task->save();
 
-            // --- KIRIM NOTIFIKASI BALIK KE SUPER ADMIN ---
-            $superAdmins = User::where('role', 'super_admin')->get();
+            $superAdmins = User::where('role', 'admin')->get();
             $notifData = [
                 'title' => 'TUGAS SELESAI DIKERJAKAN',
-                'message' => 'Seksi ' . Auth::user()->name . ' telah menyelesaikan tugas: ' . ($task->ticket_code ?? 'MNT-'.$task->id),
+                'message' => 'Petugas ' . Auth::user()->name . ' telah menyelesaikan tugas: ' . ($task->ticket_code ?? 'MNT-'.$task->id),
                 'url' => route('admin.maintenance.show', $task->id),
                 'type' => 'success'
             ];
@@ -140,9 +151,7 @@ class TugasController extends Controller
             }
 
             DB::commit();
-
             return back()->with('success', 'Laporan perbaikan berhasil dikirim dan status aset diperbarui!');
-            
         } catch (\Exception $e) {
             DB::rollback();
             return back()->with('error', 'Gagal memperbarui status: ' . $e->getMessage());

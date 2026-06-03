@@ -37,6 +37,15 @@ class Pengaduan extends Model
     ];
 
     /**
+     * Relasi ke MaintenanceTicket (Logika 1 Laporan = 1 Tiket)
+     * Ditambahkan untuk mendukung PengaduanController->show
+     */
+    public function tiket()
+    {
+        return $this->hasOne(MaintenanceTicket::class, 'report_id');
+    }
+
+    /**
      * Relasi ke tabel Logs (Riwayat Aktivitas)
      */
     public function logs()

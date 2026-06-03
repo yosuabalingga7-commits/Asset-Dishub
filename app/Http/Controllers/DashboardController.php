@@ -27,7 +27,7 @@ class DashboardController extends Controller
 
         // 3. Ambil Kategori untuk Sidebar (Sesuai kebutuhan di Blade)
         $sidebar_categories = DB::table('assets')
-            ->select('kategori', DB::raw('count(distinct jenis) as total_jenis'))
+            ->select('kategori', DB::raw('count(distinct jenis) as total_jenis'), DB::raw('count(*) as total_aset'))
             ->groupBy('kategori')
             ->get();
 
@@ -46,7 +46,15 @@ class DashboardController extends Controller
             ? DB::table('users')->where('role', 'petugas')->count() 
             : 0;
 
-        // 6. Konfigurasi Map
+        // 6. Ambil Statistik Status Aset (untuk Chart)
+        $final_status_stats = [
+            'Baik' => Asset::where('status', 'Baik')->count(),
+            'Rusak' => Asset::where('status', 'Rusak')->count(),
+            'Kritis' => Asset::where('status', 'Kritis')->count(),
+            'Proses Perbaikan' => Asset::where('status', 'Proses Perbaikan')->count(),
+        ];
+
+        // 7. Konfigurasi Map
         $mapConfig = [
             'center'      => [
                 $setting->latitude ?? -6.8431, 
@@ -56,7 +64,7 @@ class DashboardController extends Controller
             'detailZoom'  => 19,
         ];
 
-        // 7. Siapkan variabel yang dipanggil di Blade Dashboard
+        // 8. Siapkan variabel yang dipanggil di Blade Dashboard
         $total_aset = $assets->count();
 
         // Return view dengan semua variabel yang dibutuhkan Blade
@@ -67,7 +75,8 @@ class DashboardController extends Controller
             'jenis_stats', 
             'total_aset', 
             'total_laporan', 
-            'petugas_aktif'
+            'petugas_aktif',
+            'final_status_stats'
         ));
     }
 }

@@ -16,8 +16,8 @@ class MaintenanceTicket extends Model
         'ticket_code',
         'report_id',
         'asset_id',
-        'user_id',
-        'seksi_id',
+        'user_id',          // Penting: Untuk menyimpan ID petugas spesifik
+        'seksi_id',         // Penting: Untuk menyimpan ID seksi/bidang
         'category',
         'kepemilikan',
         'subject',
@@ -46,6 +46,9 @@ class MaintenanceTicket extends Model
         'updated_at'  => 'datetime',
     ];
 
+    /**
+     * Otomatis mengubah status string menjadi slug untuk keperluan CSS/Badge
+     */
     public function getStatusSlugAttribute()
     {
         $status = strtolower($this->status);
@@ -66,16 +69,25 @@ class MaintenanceTicket extends Model
         return $status;
     }
 
+    /**
+     * Relasi ke Laporan Masyarakat
+     */
     public function report()
     {
         return $this->belongsTo(LaporanMasyarakat::class, 'report_id');
     }
 
+    /**
+     * Relasi ke Data Aset
+     */
     public function asset()
     {
         return $this->belongsTo(Asset::class, 'asset_id');
     }
 
+    /**
+     * Relasi ke Petugas (User)
+     */
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id')->withDefault([
@@ -83,24 +95,36 @@ class MaintenanceTicket extends Model
         ]);
     }
 
+    /**
+     * Relasi ke Bidang/Seksi
+     */
     public function seksi()
     {
-        // PERBAIKAN: Relasi harus ke Model Seksi, bukan User
+        // Menghubungkan ke model Seksi (pastikan Model Seksi sudah ada)
         return $this->belongsTo(Seksi::class, 'seksi_id')->withDefault([
             'nama_seksi' => 'Belum Ditugaskan'
         ]);
     }
 
+    /**
+     * Relasi ke Log Aktivitas Tiket
+     */
     public function logs()
     {
         return $this->hasMany(MaintenanceLog::class, 'ticket_id');
     }
 
+    /**
+     * Cek apakah aset milik Dishub
+     */
     public function isDishub()
     {
         return strtoupper($this->kepemilikan) === 'DISHUB' || strtolower($this->category) === 'dishub';
     }
 
+    /**
+     * Cek apakah aset milik Umum/Pihak 3
+     */
     public function isUmum()
     {
         return !$this->isDishub();

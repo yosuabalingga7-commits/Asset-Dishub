@@ -8,12 +8,16 @@
     }
     .animate-wave-flow { animation: wave-move 20s linear infinite; }
     
+    /* Update Gradasi Profesional: Menutup ke arah bawah dan samping */
     .hero-overlay-soft {
         background: linear-gradient(to right, 
-            rgba(255,255,255,0.95) 0%, 
-            rgba(255,255,255,0.7) 30%, 
-            rgba(255,255,255,0.2) 60%, 
-            rgba(255,255,255,0) 100%);
+            rgba(255,255,255,1) 0%, 
+            rgba(255,255,255,0.9) 25%, 
+            rgba(255,255,255,0.4) 60%, 
+            rgba(255,255,255,0) 100%),
+        linear-gradient(to bottom,
+            rgba(255,255,255,0) 60%,
+            rgba(255,255,255,1) 100%);
     }
 
     .text-huge {
@@ -38,13 +42,14 @@
 </style>
 
 <div class="font-inter bg-white">
-    {{-- Update: Background diganti dengan background_dishub_kbb.png --}}
+    {{-- Section Hero dengan Background & Gradasi Terpaku --}}
     <section class="relative min-h-screen flex items-center overflow-hidden pb-32 pt-20">
         
         <div class="absolute inset-0 z-0">
             <img src="{{ asset('img/background_dishub_kbb.png') }}" alt="Visual Dishub KBB" 
                  class="w-full h-full object-cover">
             
+            {{-- Layer Gradasi --}}
             <div class="absolute inset-0 hero-overlay-soft"></div>
         </div>
 
@@ -67,23 +72,20 @@
                 
                 <div x-show="show" x-transition.delay.400ms class="mb-6">
                     <p class="text-xl md:text-2xl text-slate-800 font-bold tracking-tight uppercase">
-                        Layanan Inventaris & Tata Aset Sistem
+                        Layanan Inventaris & Sistem Tata Aset
                     </p>
                 </div>
                 
                 <p x-show="show" x-transition.delay.500ms
                    class="max-w-xl text-lg text-slate-600 leading-relaxed mb-10 font-medium">
-                    Sistem pelaporan dan pendataan aset infrastruktur jalan yang terintegrasi untuk mewujudkan pelayanan publik yang prima di wilayah KBB.
+                    Sistem pelaporan dan pendataan aset infrastruktur jalan yang terintegrasi untuk mewujudkan pelayanan publik yang prima di wilayah Kabupaten Bandung Barat.
                 </p>
 
                 {{-- Group Tombol --}}
                 <div x-show="show" x-transition.delay.600ms
                      class="flex flex-wrap gap-5 relative z-50">
                     <a href="{{ route('lapor.public') }}" class="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm tracking-widest uppercase shadow-lg shadow-blue-600/30 transition-all hover:-translate-y-1 active:scale-95">
-                        📢 LAPOR SEKARANG
-                    </a>
-                    <a href="#kegiatan" class="px-8 py-4 bg-white/80 backdrop-blur-sm text-slate-700 border border-slate-200 rounded-xl font-bold text-sm tracking-widest uppercase transition-all hover:bg-white shadow-sm">
-                        Lihat Kegiatan
+                        LAPOR SEKARANG
                     </a>
                 </div>
             </div>
@@ -99,20 +101,17 @@
                         </svg>
                     </div>
                     <div>
-                        <h4 class="text-slate-900 font-bold text-xs uppercase tracking-tight">LINTAS</h4>
-                        <p class="text-blue-600 text-[10px] font-bold">Layanan Inventaris & Tata Aset Sistem</p>
+                        <h4 class="font-bold text-xs uppercase tracking-tight">
+                        <span class="text-slate-900">LIN</span><span class="text-blue-600">TAS.</span>
+                      </h4>
+                        <p class="text-blue-600 text-[10px] font-bold">Layanan Inventaris & Sistem Tata Aset</p>
                     </div>
                 </div>
             </div>
         </div>
-
-        <div class="absolute bottom-0 left-0 w-full overflow-hidden leading-none h-[100px] z-40">
-            <svg class="relative block w-[200%] h-full animate-wave-flow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
-                <path d="M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5,73.84-4.36,147.54,16.88,218.2,35.26,69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z" fill="white"></path>
-            </svg>
-        </div>
     </section>
 
+    {{-- Stats Section --}}
     <section class="relative z-50 -mt-10 px-8">
         <div class="max-w-7xl mx-auto">
             <div class="grid grid-cols-1 md:grid-cols-3 bg-white border border-slate-100 rounded-[2.5rem] overflow-hidden shadow-2xl shadow-slate-200/50">
@@ -132,6 +131,7 @@
         </div>
     </section>
 
+    {{-- Tentang Section --}}
     <section id="tentang" class="py-32 bg-white">
         <div class="max-w-7xl mx-auto px-8">
             <div class="flex flex-col lg:flex-row justify-between items-end mb-24 gap-10">
@@ -140,11 +140,8 @@
                         Sinergi <br> Pendataan & Penataan.
                     </h2>
                     <p class="text-xl text-slate-600 font-medium italic leading-relaxed border-l-4 border-blue-600 pl-6">
-                       LINTAS dirancang untuk mempermudah koordinasi pengelolaan aset dan pelaporan insiden infrastruktur demi kenyamanan masyarakat KBB.
+                       LINTAS dirancang untuk mempermudah koordinasi pengelolaan aset dan pelaporan insiden infrastruktur demi kenyamanan masyarakat Kabupaten Bandung Barat.
                     </p>
-                </div>
-                <div class="pb-4 hidden lg:block text-slate-100">
-                    <span class="font-black text-[12rem] tracking-tighter leading-none select-none">01.</span>
                 </div>
             </div>
 
@@ -176,7 +173,7 @@
         </div>
     </section>
 
-    {{-- ========== SECTION BARU: GALERI KEGIATAN DISHUB (SETELAH TENTANG) ========== --}}
+    {{-- Galeri Section --}}
     <section id="kegiatan" class="py-28 bg-slate-50/80">
         <div class="max-w-7xl mx-auto px-8">
             <div class="text-center mb-16">
@@ -233,7 +230,6 @@
             </div>
         </div>
     </section>
-    {{-- ========== AKHIR GALERI KEGIATAN ========== --}}
 
 </div>
 @endsection

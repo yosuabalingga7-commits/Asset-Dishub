@@ -27,7 +27,19 @@ class LaporanMasyarakat extends Model
         'is_validated',
         'kepemilikan',
         'catatan_admin',
+        'id_asset',
+        'sumber_laporan',
+        'ip_address',
     ];
+
+    /**
+     * Relasi ke tabel Asset
+     * Digunakan untuk mengambil data aset (nama, kategori, dll) dari laporan
+     */
+    public function asset()
+    {
+        return $this->belongsTo(Asset::class, 'asset_id');
+    }
 
     public function logs()
     {
@@ -44,6 +56,12 @@ class LaporanMasyarakat extends Model
      * Digunakan pada: LaporanMasyarakat::whereDoesntHave('maintenanceTicket')
      */
     public function maintenanceTicket()
+    {
+        return $this->hasOne(MaintenanceTicket::class, 'report_id');
+    }
+
+    // Tambahkan alias 'tiket' agar konsisten dengan model Pengaduan
+    public function tiket()
     {
         return $this->hasOne(MaintenanceTicket::class, 'report_id');
     }

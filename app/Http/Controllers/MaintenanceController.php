@@ -8,7 +8,8 @@ use App\Models\MaintenanceTicket;
 use App\Models\LaporanMasyarakat;
 use App\Models\Asset; 
 use App\Models\User; 
-use App\Notifications\MaintenanceNotification; // TAMBAHAN UNTUK NOTIFIKASI
+use App\Models\Category;
+use App\Notifications\MaintenanceNotification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
@@ -24,18 +25,16 @@ class MaintenanceController extends Controller
 {
     public function index(Request $request)
     {
-        // 1. Ambil data dari tabel maintenance_tickets
         $ticketsFromDb = MaintenanceTicket::with(['report', 'asset', 'user'])
             ->orderBy('created_at', 'desc')
             ->get();
 
-        // 2. Ambil data dari tabel LaporanMasyarakat yang berstatus 'Proses Perbaikan' 
+        // LOGIKA: Ambil laporan masyarakat yang statusnya "Proses Perbaikan" tapi BELUM memiliki tiket
         $laporanWarga = LaporanMasyarakat::where('status', 'Proses Perbaikan')
-            ->whereDoesntHave('maintenanceTicket') 
+            ->whereDoesntHave('tiket') // Menggunakan relasi 'tiket' sesuai diskusi sebelumnya
             ->orderBy('updated_at', 'desc')
             ->get();
 
-        // 3. Transformasi data MaintenanceTicket
         $dataTickets = $ticketsFromDb->map(function ($ticket) {
             $safeFormat = function($date) {
                 if (!$date) return '-';
@@ -46,9 +45,14 @@ class MaintenanceController extends Controller
                 }
             };
 
-            $displaySource = $ticket->kepemilikan;
-            if (!$displaySource) {
-                $displaySource = $ticket->isDishub() ? 'DISHUB' : 'UMUM/PIHAK 3';
+            // Ambil dari kolom kepemilikan database tiket
+            $displaySource = $ticket->kepemilikan ?? ($ticket->isDishub() ? 'DISHUB' : 'Pihak Ketiga');
+            
+            // Standarisasi string untuk tampilan index halaman admin
+            if (strtolower($displaySource) === 'dishub') {
+                $displaySource = 'DISHUB';
+            } else {
+                $displaySource = 'Pihak Ketiga';
             }
 
             $statusAsli = $ticket->status;
@@ -75,12 +79,20 @@ class MaintenanceController extends Controller
                 'foto_sesudah' => $ticket->foto_perbaikan ? asset('storage/' . $ticket->foto_perbaikan) : null,
                 'progress_percent' => $statusAsli == 'selesai' ? 100 : ($statusAsli == 'proses' ? 50 : 0),
                 'source' => $displaySource, 
-                'is_dishub' => true 
+                'is_dishub' => ($displaySource === 'DISHUB') // PERBAIKAN: Dibuat dinamis sesuai isi data database
             ];
         });
 
-        // 4. Transformasi data Laporan Warga
         $dataLaporan = $laporanWarga->map(function ($laporan) {
+            // PERBAIKAN: Mengambil data kepemilikan yang sudah disimpan saat klik tombol validasi di database
+            $sourceLaporan = $laporan->kepemilikan ?? 'Pihak Ketiga';
+            
+            if (strtolower($sourceLaporan) === 'dishub') {
+                $sourceLaporan = 'DISHUB';
+            } else {
+                $sourceLaporan = 'Pihak Ketiga';
+            }
+
             return [
                 'id' => $laporan->id,
                 'ticket_code' => 'WAITING',
@@ -89,7 +101,7 @@ class MaintenanceController extends Controller
                 'prioritas' => $laporan->priority ?? 'NORMAL',
                 'asset' => $laporan->judul_laporan,
                 'lokasi' => $laporan->alamat ?? ($laporan->lat . ', ' . $laporan->lng),
-                'deskripsi' => $laporan->isi_laporan ?? $laporan->deskripsi_laporan,
+                'deskripsi' => $laporan->deskripsi_keluhan ?? $laporan->isi_laporan ?? 'Laporan Masyarakat',
                 'petugas' => 'Proses Validasi',
                 'tgl_laporan' => $laporan->created_at ? $laporan->created_at->format('d M Y') : '-',
                 'tgl_mulai' => $laporan->updated_at ? $laporan->updated_at->format('d M Y') : '-',
@@ -97,19 +109,17 @@ class MaintenanceController extends Controller
                 'foto_sebelum' => $laporan->foto ? asset('storage/' . $laporan->foto) : asset('img/panelPJU.png'),
                 'foto_sesudah' => null,
                 'progress_percent' => 0,
-                'source' => 'MASYARAKAT', 
-                'is_dishub' => true 
+                'source' => $sourceLaporan, // PERBAIKAN: Menggunakan nilai dinamis hasil validasi
+                'is_dishub' => ($sourceLaporan === 'DISHUB') // PERBAIKAN: Menyesuaikan status kepemilikan secara dinamis
             ];
         });
 
         $allTickets = $dataTickets->concat($dataLaporan);
-
         $currentPage = Paginator::resolveCurrentPage() ?: 1;
         $perPage = 9; 
-        $currentItems = $allTickets->slice(($currentPage - 1) * $perPage, $perPage)->values();
         
         $tickets = new LengthAwarePaginator(
-            $currentItems, 
+            $allTickets->slice(($currentPage - 1) * $perPage, $perPage)->values(), 
             $allTickets->count(), 
             $perPage, 
             $currentPage, 
@@ -124,141 +134,159 @@ class MaintenanceController extends Controller
         $reportId = $request->query('report_id');
         $laporan = $reportId ? LaporanMasyarakat::find($reportId) : null;
         
-        // Mengambil user dengan relasi seksi agar di view bisa muncul nama seksinya
-        $listSeksi = User::with('seksi')->get();
+        // Logika tambahan: Jika laporan sudah punya tiket, arahkan ke tiket tersebut
+        if($laporan && $laporan->tiket) {
+            return redirect()->route('admin.maintenance.show', $laporan->tiket->id)
+                             ->with('info', 'Tiket untuk laporan ini sudah pernah dibuat.');
+        }
 
-        $categories = collect([
-            (object)['id' => 1, 'name' => 'PENERANGAN JALAN UMUM (PJU)'],
-            (object)['id' => 2, 'name' => 'PERLENGKAPAN JALAN'],
-            (object)['id' => 3, 'name' => 'FASILITAS LALU LINTAS'],
-            (object)['id' => 4, 'name' => 'PENGENDALIAN & PENGAWASAN'],
-            (object)['id' => 5, 'name' => 'PRASARANA TRANSPORTASI']
-        ]);
+        // AMANKAN URL PARAMETER KE COMPACT: Ambil source dari URL filter modal validasi (?source=dishub atau pihak-ke-3)
+        $sourceUrl = $request->query('source');
+
+        if ($laporan && $sourceUrl) {
+            // Harmonisasi string agar seragam ke format database utama
+            $laporan->kepemilikan = (strtolower($sourceUrl) === 'dishub') ? 'Dishub' : 'Pihak Ke-3';
+        }
+
+        $listSeksi = User::with('seksi')->get();
+        $categories = Category::orderBy('nama_kategori', 'asc')->get(); 
 
         return view('admin.maintenance.create', compact('laporan', 'categories', 'listSeksi'));
+    }
+
+    public function edit($id)
+    {
+        $ticket = MaintenanceTicket::findOrFail($id);
+        $categories = Category::orderBy('nama_kategori', 'asc')->get();
+        $listSeksi = User::with('seksi')->get();
+
+        return view('admin.maintenance.create', [
+            'maintenance' => $ticket, 
+            'laporan' => $ticket->report,
+            'categories' => $categories,
+            'listSeksi' => $listSeksi
+        ]);
     }
 
     public function store(Request $request)
     {
         $request->validate([
-            'description' => 'required',
             'user_id'     => 'required',
+            'category_id' => 'required',
+            'category'    => 'required',
+            'jenis_aset'  => 'required',
         ]);
 
         try {
-            // AMBIL DATA ORANGNYA BERDASARKAN ID DARI DROPDOWN
             $userDb = User::findOrFail($request->user_id);
+            $laporan = LaporanMasyarakat::find($request->report_id);
             
-            $petugasName = $userDb->name;
-            $petugasWA = $userDb->no_wa;
-            $dbUserId = $userDb->id; 
-            $targetSeksiId = $userDb->seksi_id; // KUNCI: Otomatis ambil seksi_id dari profil user
+            // CEK DOUBLE INPUT: Pastikan laporan belum punya tiket
+            if ($laporan && $laporan->tiket) {
+                return redirect()->route('admin.maintenance.index')->with('error', 'Tiket untuk laporan ini sudah ada.');
+            }
 
-            $ticket = DB::transaction(function () use ($request, $dbUserId, $petugasName, $targetSeksiId) {
+            $ticket = DB::transaction(function () use ($request, $userDb, $laporan) {
                 $ticketCode = 'MNT-' . strtoupper(Str::random(8));
-                $categoryName = $request->category ?? ''; 
-                
-                $isDishubCategory = str_contains(strtolower($categoryName), 'pju') || 
-                                    str_contains(strtolower($categoryName), 'lalu lintas');
+                $finalDescription = $request->description ?? ($laporan->deskripsi_keluhan ?? 'Perbaikan rutin aset');
 
-                $kepemilikanValue = $request->source_type ?? ($isDishubCategory ? 'DISHUB' : 'UMUM/PIHAK 3');
+                // FIX UTAMA: Jangan di-hardcode ke 'Pihak Ketiga'! Ambil langsung input source_type dari Form Blade.
+                $fixKepemilikan = $request->source_type ?? 'Dishub';
+
+                // PENGAMAN PARAMETER: Ambil asset_id/id_asset secara fleksibel
+                $rawAssetId = $request->asset_id ?? $request->id_asset ?? ($laporan ? $laporan->asset_id : null);
+                
+                // Cari ID numerik asli dari tabel assets untuk foreign key
+                $numericAssetId = null;
+                if ($rawAssetId) {
+                    $assetRecord = DB::table('assets')->where('id', $rawAssetId)->orWhere('id_asset', $rawAssetId)->first();
+                    if ($assetRecord) {
+                        $numericAssetId = $assetRecord->id;
+                    }
+                }
 
                 $newTicket = MaintenanceTicket::create([
                     'ticket_code'      => $ticketCode,
                     'report_id'        => $request->report_id, 
-                    'asset_id'         => $request->asset_id,
+                    'asset_id'         => $numericAssetId,
                     'category_id'      => $request->category_id, 
-                    'category'         => $request->category ?? 'umum',
-                    'kepemilikan'      => $kepemilikanValue, 
+                    'category'         => $request->category,
+                    'kepemilikan'      => $fixKepemilikan, 
                     'priority'         => $request->priority ?? 'Sedang',
                     'status'           => 'proses', 
                     'location_address' => $request->location_address,
                     'latitude'         => $request->latitude,
                     'longitude'        => $request->longitude,
-                    'description'      => $request->description,
+                    'description'      => $finalDescription,
                     'jenis_aset'       => $request->jenis_aset,
-                    
-                    // OTOMATIS SINKRON DENGAN PROFIL USER TERPILIH
-                    'seksi_id'         => $targetSeksiId, 
-                    'user_id'          => $dbUserId, 
-                    'technician_name'  => $petugasName, 
-                    
+                    'seksi_id'         => $userDb->seksi_id, 
+                    'user_id'          => $userDb->id, 
+                    'technician_name'  => $userDb->name, 
                     'deadline'         => $request->deadline,
-                    'edit_reason'      => $request->edit_reason,
                     'started_at'       => now(),
                 ]);
 
                 if ($request->report_id) {
                     LaporanMasyarakat::where('id', $request->report_id)->update([
                         'status' => 'Proses Perbaikan',
+                        'kepemilikan' => $fixKepemilikan,
                         'updated_at' => now()
                     ]);
                 }
                 return $newTicket;
             });
 
-            // --- KIRIM NOTIFIKASI INTERNAL KE SEKSI TERPILIH ---
             $userDb->notify(new MaintenanceNotification([
                 'title' => 'PENUGASAN BARU',
-                'message' => 'Anda ditugaskan untuk tiket ' . $ticket->ticket_code . '. Segera tindaklanjuti.',
+                'message' => 'Tiket ' . $ticket->ticket_code . ' ditugaskan kepada Anda.',
                 'url' => route('admin.maintenance.show', $ticket->id),
                 'type' => 'urgent'
             ]));
 
-            // --- WA BOT NOTIFIKASI ---
-            if ($request->send_wa == '1' && !empty($petugasWA)) {
-                $urlDetail = route('admin.maintenance.show', $ticket->id);
-                $now = Carbon::now();
-                $hour = $now->hour;
-                
-                if ($hour >= 5 && $hour < 11) { $salam = "Selamat Pagi"; }
-                elseif ($hour >= 11 && $hour < 15) { $salam = "Selamat Siang"; }
-                elseif ($hour >= 15 && $hour < 18) { $salam = "Selamat Sore"; }
-                else { $salam = "Selamat Malam"; }
-
-                $panggilan = "Pak/Bu";
-                $namaPetugas = strtoupper($petugasName);
-                $jenisAset = $request->jenis_aset ?: ($ticket->jenis_aset ?: 'Aset Dishub');
-
-                $pesan = "--- *NOTIFIKASI KBB-SMART ASSET* ---\n\n"
-                       . $salam . ", " . $panggilan . " *" . $namaPetugas . "*.\n\n"
-                       . "Izin memberitahukan, terdapat penugasan perbaikan aset baru: *" . $jenisAset . "*.\n\n"
-                       . "🔗 *DETAIL TUGAS:* \n" . $urlDetail . "\n\n"
-                       . "Mohon untuk segera ditindaklanjuti. Terima kasih.\n\n"
-                       . "*Admin Dishub KBB*";
-
-                try {
-                    Http::timeout(5)->post('http://localhost:3000/send-message', [
-                        'phone' => $this->formatPhone($petugasWA),
-                        'message' => $pesan,
-                    ]);
-                } catch (\Exception $waError) {
-                    \Log::error("Gagal panggil Robot WA: " . $waError->getMessage());
-                }
+            if ($request->send_wa == '1' && !empty($userDb->no_wa)) {
+                $this->sendWaNotification($userDb, $ticket, $laporan);
             }
 
             return redirect()->route('admin.maintenance.index')->with('success', 'Tiket maintenance berhasil dibuat.');
 
         } catch (\Exception $e) {
-            return back()->withInput()->with('error', 'Gagal menyimpan data: ' . $e->getMessage());
+            return back()->withInput()->with('error', 'Gagal: ' . $e->getMessage());
         }
     }
 
-    public function edit($id)
+    private function sendWaNotification($user, $ticket, $laporan = null)
     {
-        $ticket = MaintenanceTicket::findOrFail($id);
-        
-        $categories = collect([
-            (object)['id' => 1, 'name' => 'PENERANGAN JALAN UMUM (PJU)'],
-            (object)['id' => 2, 'name' => 'PERLENGKAPAN JALAN'],
-            (object)['id' => 3, 'name' => 'FASILITAS LALU LINTAS'],
-            (object)['id' => 4, 'name' => 'PENGENDALIAN & PENGAWASAN'],
-            (object)['id' => 5, 'name' => 'PRASARANA TRANSPORTASI']
-        ]);
+        $jam = date('H');
+        if ($jam < 10) {
+            $waktu = 'Pagi';
+        } elseif ($jam < 15) {
+            $waktu = 'Siang';
+        } elseif ($jam < 18) {
+            $waktu = 'Sore';
+        } else {
+            $waktu = 'Malam';
+        }
 
-        $listPetugas = User::with('seksi')->get();
+        $namaAset = $ticket->jenis_aset ?? ($laporan->judul_laporan ?? 'Aset Dishub');
+        $linkTugas = route('admin.maintenance.show', $ticket->id);
 
-        return view('admin.maintenance.edit', compact('ticket', 'categories', 'listPetugas'));
+        $pesan = "--- NOTIFIKASI KBB-SMART ASSET ---\n\n"
+               . "Selamat $waktu, Pak/Bu " . strtoupper($user->name) . ".\n\n"
+               . "Izin memberitahukan, terdapat penugasan perbaikan aset baru: *$namaAset*.\n\n"
+               . "Untuk informasi lebih lengkap mengenai lokasi dan instruksi pengerjaan, silakan klik tautan resmi berikut:\n\n"
+               . "🔗 DETAIL TUGAS: \n$linkTugas\n\n"
+               . "Mohon untuk segera ditindaklanjuti. Terima kasih atas kerja samanya.\n\n"
+               . "Hormat kami,\n"
+               . "Admin Dishub KBB";
+
+        try {
+            Http::timeout(5)->post('http://localhost:3000/send-message', [
+                'phone' => $this->formatPhone($user->no_wa),
+                'message' => $pesan,
+            ]);
+        } catch (\Exception $e) { 
+            \Log::error("WA Error: " . $e->getMessage()); 
+        }
     }
 
     public function update(Request $request, $id) 
@@ -270,122 +298,47 @@ class MaintenanceController extends Controller
 
         try {
             DB::beginTransaction();
-
             $maintenance = MaintenanceTicket::findOrFail($id);
             $input = $request->except('foto_perbaikan');
 
             if ($request->status == 'selesai') {
                 $input['finished_at'] = now();
-
                 if ($request->hasFile('foto_perbaikan')) {
-                    $file = $request->file('foto_perbaikan');
-                    $filename = 'perbaikan_' . time() . '.' . $file->getClientOriginalExtension();
-                    $path = $file->storeAs('maintenance/perbaikan', $filename, 'public');
-                    $input['foto_perbaikan'] = $path;
+                    $input['foto_perbaikan'] = $request->file('foto_perbaikan')->store('maintenance/perbaikan', 'public');
                 }
-
-                if ($maintenance->asset_id) {
-                    Asset::where('id', $maintenance->asset_id)->update(['status' => 'Baik']);
+                
+                // Amankan target ID Numerik dari tiket perbaikan
+                $assetId = $maintenance->asset_id;
+                
+                if ($assetId) {
+                    // Update ke tabel assets menggunakan ID numerik asli
+                    DB::table('assets')->where('id', $assetId)->update([
+                        'status' => 'Baik',
+                        'updated_at' => now()
+                    ]);
                 }
-
                 if ($maintenance->report_id) {
                     LaporanMasyarakat::where('id', $maintenance->report_id)->update(['status' => 'Selesai']);
-                }
-
-                // --- KIRIM NOTIF BALIK KE SUPER ADMIN SAAT SELESAI ---
-                $superAdmins = User::where('role', 'super_admin')->get();
-                $notifData = [
-                    'title' => 'PERBAIKAN SELESAI',
-                    'message' => 'Seksi ' . Auth::user()->name . ' telah menyelesaikan tiket ' . $maintenance->ticket_code,
-                    'url' => route('admin.maintenance.show', $maintenance->id),
-                    'type' => 'success'
-                ];
-                foreach ($superAdmins as $admin) {
-                    $admin->notify(new MaintenanceNotification($notifData));
                 }
             }
 
             $maintenance->update($input);
-
             DB::commit();
-            return redirect()->route('admin.maintenance.index')->with('success', 'Data perbaikan berhasil diperbarui.');
-            
+            return redirect()->route('admin.maintenance.index')->with('success', 'Data berhasil diperbarui.');
         } catch (\Exception $e) {
             DB::rollback();
-            return back()->with('error', 'Gagal memperbarui data: ' . $e->getMessage());
+            return back()->with('error', 'Gagal: ' . $e->getMessage());
         }
     }
 
-    public function show($id) 
-    { 
+    public function show($id) { 
         $ticket = MaintenanceTicket::with(['report', 'user', 'asset'])->findOrFail($id); 
         return view('admin.maintenance.show', compact('ticket')); 
     }
 
-    public function updateStatus(Request $request, $id) 
-    { 
-        try {
-            DB::beginTransaction();
-            
-            $ticket = MaintenanceTicket::findOrFail($id);
-            
-            $ticket->status = $request->status;
-            $ticket->completion_notes = $request->completion_notes;
-            
-            if($request->status == 'selesai') {
-                $ticket->finished_at = now();
-                
-                if ($request->hasFile('foto_perbaikan')) {
-                    $file = $request->file('foto_perbaikan');
-                    $filename = 'perbaikan_' . time() . '.' . $file->getClientOriginalExtension();
-                    $path = $file->storeAs('maintenance/perbaikan', $filename, 'public');
-                    $ticket->foto_perbaikan = $path;
-                }
-
-                if ($ticket->asset_id) {
-                    Asset::where('id', $ticket->asset_id)->update(['status' => 'Baik']);
-                }
-
-                if ($ticket->report_id) {
-                    LaporanMasyarakat::where('id', $ticket->report_id)->update(['status' => 'Selesai']);
-                }
-
-                // --- KIRIM NOTIF BALIK KE SUPER ADMIN ---
-                $superAdmins = User::where('role', 'super_admin')->get();
-                foreach ($superAdmins as $admin) {
-                    $admin->notify(new MaintenanceNotification([
-                        'title' => 'PERBAIKAN SELESAI',
-                        'message' => 'Tiket ' . $ticket->ticket_code . ' telah ditandai selesai.',
-                        'url' => route('admin.maintenance.show', $ticket->id),
-                        'type' => 'success'
-                    ]));
-                }
-            }
-            
-            $ticket->save();
-            DB::commit();
-
-            if ($request->ajax() || $request->wantsJson()) {
-                return response()->json(['success' => true]);
-            }
-
-            return redirect()->route('admin.maintenance.index')->with('success', 'Status berhasil diperbarui!');
-            
-        } catch (\Exception $e) {
-            DB::rollback();
-            if ($request->ajax() || $request->wantsJson()) {
-                return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
-            }
-            return back()->with('error', 'Gagal: ' . $e->getMessage());
-        }
-    }
-    
     private function formatPhone($phone) {
         if (!$phone) return '';
         $phone = preg_replace('/[^0-9]/', '', $phone);
-        if (str_starts_with($phone, '0')) {
-            $phone = '62' . substr($phone, 1);
-        }
-        return $phone;
+        return str_starts_with($phone, '0') ? '62' . substr($phone, 1) : $phone;
     }
 }

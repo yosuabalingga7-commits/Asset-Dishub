@@ -7,177 +7,172 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap');
         
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
-            background: #0f172a;
+            background-color: #f8fafc;
+            height: 100vh;
             overflow: hidden;
         }
 
-        .glass-card {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        .bg-login {
+            background: linear-gradient(rgba(142, 141, 147, 0.8), rgba(32, 49, 88, 0.8)), 
+                        url("{{ asset('img/kegiatan_dishub_kbb2.png') }}");
+            background-size: cover;
+            background-position: center;
         }
 
-        .input-gradient {
+        .glass-feature {
             background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(8px);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            color: white;
             transition: all 0.3s ease;
         }
 
-        .input-gradient:focus {
-            background: rgba(255, 255, 255, 0.08);
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+        .glass-feature:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-5px);
         }
 
-        /* Background Waves Animation */
-        .waves {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 40vh;
-            margin-bottom: -7px;
-            min-height: 100px;
-            max-height: 150px;
-            z-index: -1;
+        .input-custom {
+            background: #ffffff;
+            border: 1.5px solid #e2e8f0;
+            transition: all 0.3s ease;
         }
 
-        .parallax > use {
-            animation: move-forever 25s cubic-bezier(.55, .5, .45, .5) infinite;
-        }
-        .parallax > use:nth-child(1) { animation-delay: -2s; animation-duration: 7s; }
-        .parallax > use:nth-child(2) { animation-delay: -3s; animation-duration: 10s; }
-        .parallax > use:nth-child(3) { animation-delay: -4s; animation-duration: 13s; }
-        .parallax > use:nth-child(4) { animation-delay: -5s; animation-duration: 20s; }
-
-        @keyframes move-forever {
-            0% { transform: translate3d(-90px, 0, 0); }
-            100% { transform: translate3d(85px, 0, 0); }
+        .input-custom:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
         }
 
-        .blob {
-            position: absolute;
-            width: 500px;
-            height: 500px;
-            background: rgba(59, 130, 246, 0.1);
-            filter: blur(80px);
-            border-radius: 50%;
-            z-index: -2;
-            animation: blob-move 20s infinite alternate;
+        .btn-primary {
+            background: #2563eb;
+            transition: all 0.3s ease;
         }
 
-        @keyframes blob-move {
-            from { transform: translate(-10%, -10%); }
-            to { transform: translate(20%, 20%); }
+        .btn-primary:hover {
+            background: #1d4ed8;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
         }
+
+        .text-lin { color: #ffffff; }
+        .text-tas { color: #3b82f6; }
+        .feature-title { color: #ffffff; }
+        .feature-desc { color: #cbd5e1; }
     </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-6 relative">
+<body class="flex flex-col md:flex-row h-screen w-full overflow-hidden">
 
-    {{-- Background Elements --}}
-    <div class="blob top-0 left-0"></div>
-    <div class="blob bottom-0 right-0" style="background: rgba(99, 102, 241, 0.05); animation-delay: -5s;"></div>
-
-    {{-- Animated Waves --}}
-    <svg class="waves" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
-    viewBox="0 24 150 28" preserveAspectRatio="none" shape-rendering="auto">
-        <defs>
-            <path id="gentle-wave" d="M-160 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v44h-352z" />
-        </defs>
-        <g class="parallax">
-            <use xlink:href="#gentle-wave" x="48" y="0" fill="rgba(59, 130, 246, 0.05)" />
-            <use xlink:href="#gentle-wave" x="48" y="3" fill="rgba(59, 130, 246, 0.1)" />
-            <use xlink:href="#gentle-wave" x="48" y="5" fill="rgba(59, 130, 246, 0.15)" />
-            <use xlink:href="#gentle-wave" x="48" y="7" fill="rgba(59, 130, 246, 0.2)" />
-        </g>
-    </svg>
-
-    <div class="max-w-[450px] w-full glass-card rounded-[2.5rem] overflow-hidden relative z-10">
-        <div class="p-10">
-            {{-- Link ke Landing Page --}}
-            <div class="absolute top-6 right-8">
-                {{-- Diupdate ke route('landing') agar tepat sasaran --}}
-                <a href="{{ route('landing') }}" class="text-blue-400 hover:text-blue-300 transition-all flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest group">
-                    Beranda <i class="fas fa-external-link-alt group-hover:translate-x-1 transition-transform"></i>
-                </a>
+    <div class="hidden md:flex md:w-3/5 bg-login relative items-center justify-center p-8 h-full">
+        <div class="relative z-10 w-full max-w-xl text-center flex flex-col items-center">
+            
+            <div class="inline-block mb-6">
+                <img src="{{ asset('img/logodishub.png') }}" alt="Logo Dishub" 
+                     class="w-60 h-60 object-contain transform transition hover:scale-105 duration-500">
             </div>
 
-            <div class="text-center mb-10">
-                <div class="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-tr from-blue-600 to-indigo-500 rounded-3xl mb-6 shadow-2xl rotate-3 transform transition hover:rotate-0 duration-500">
-                    <i class="fas fa-shield-alt text-white text-3xl"></i>
+            <h2 class="text-lg font-light mb-1 tracking-wide text-slate-300">Selamat Datang di</h2>
+            <h1 class="text-4xl font-extrabold mb-2 tracking-tight text-white">
+                Aplikasi <span class="text-lin">LIN</span><span class="text-tas">TAS</span>
+            </h1>
+            <p class="text-[10px] text-slate-300 font-bold mb-8 uppercase tracking-[0.3em]">Layanan Inventaris & Sistem Tata Aset</p>
+
+            <div class="grid grid-cols-2 gap-4 text-left w-full px-4">
+                <div class="glass-feature p-3 rounded-2xl">
+                    <i class="fas fa-chart-line text-md text-blue-400 mb-1"></i>
+                    <h3 class="text-[11px] font-bold mb-0.5 feature-title">Monitoring Real-Time</h3>
+                    <p class="text-[9px] feature-desc leading-tight">Pantau kondisi aset daerah secara langsung.</p>
                 </div>
-                <h1 class="text-4xl font-extrabold text-white tracking-tight mb-2">LINTAS</h1>
-                <p class="text-blue-300/80 text-xs font-semibold uppercase tracking-[0.2em]">Layanan Inventaris & Tata Aset Sistem</p>
+                <div class="glass-feature p-3 rounded-2xl">
+                    <i class="fas fa-map-marked-alt text-md text-blue-400 mb-1"></i>
+                    <h3 class="text-[11px] font-bold mb-0.5 feature-title">Tracking Lokasi</h3>
+                    <p class="text-[9px] feature-desc leading-tight">Pemetaan aset berbasis GIS.</p>
+                </div>
+                <div class="glass-feature p-3 rounded-2xl">
+                    <i class="fas fa-check-circle text-md text-blue-400 mb-1"></i>
+                    <h3 class="text-[11px] font-bold mb-0.5 feature-title">Validasi Digital</h3>
+                    <p class="text-[9px] feature-desc leading-tight">Proses pelaporan transparan.</p>
+                </div>
+                <div class="glass-feature p-3 rounded-2xl">
+                    <i class="fas fa-shield-alt text-md text-blue-400 mb-1"></i>
+                    <h3 class="text-[11px] font-bold mb-0.5 feature-title">Data Terproteksi</h3>
+                    <p class="text-[9px] feature-desc leading-tight">Keamanan data terjamin.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="w-full md:w-2/5 flex flex-col items-center justify-center p-8 bg-white h-full relative">
+        <div class="w-full max-w-sm">
+            
+            <div class="mb-8">
+                <a href="{{ route('landing') }}" class="inline-flex items-center text-slate-400 hover:text-blue-600 transition-colors text-[10px] font-bold uppercase tracking-widest mb-4 group">
+                    <i class="fas fa-arrow-left mr-2 group-hover:-translate-x-1 transition-transform"></i> Kembali ke Beranda
+                </a>
+                <h2 class="text-2xl font-extrabold text-slate-800 mb-1">Login Aplikasi</h2>
+                <p class="text-sm text-slate-500 font-medium">Silakan masuk menggunakan akun Anda</p>
             </div>
 
             @if($errors->any())
-            <div class="mb-6 p-4 bg-red-500/10 border border-red-500/50 text-red-200 text-sm rounded-2xl backdrop-blur-md">
-                <ul class="list-disc list-inside">
+            <div class="mb-4 p-3 bg-red-50 border-l-4 border-red-500 text-red-700 text-[10px] rounded-r-lg">
+                <ul class="font-semibold">
                     @foreach($errors->all() as $error)
-                        <li>{{ $error }}</li>
+                        <li><i class="fas fa-exclamation-circle mr-1"></i> {{ $error }}</li>
                     @endforeach
                 </ul>
             </div>
             @endif
 
-            <form action="{{ route('login') }}" method="POST" class="space-y-6">
+            <form action="{{ route('login') }}" method="POST" class="space-y-4">
                 @csrf
-                
-                <div>
-                    <label class="block text-sm font-medium text-blue-200 mb-2 ml-1">Identitas NIP</label>
-                    <div class="relative group">
-                        <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-blue-400 group-focus-within:text-blue-300">
-                            <i class="fas fa-id-badge text-lg"></i>
-                        </span>
-                        <input type="text" name="nip" value="{{ old('nip') }}" required autofocus
-                            class="input-gradient block w-full pl-12 pr-4 py-4 rounded-2xl outline-none text-sm placeholder-gray-500"
-                            placeholder="Masukkan NIP Anda">
-                    </div>
+                <div class="space-y-1.5">
+                    <label class="text-[10px] font-bold text-slate-700 ml-1 uppercase tracking-wider">Username / NIP</label>
+                    <input type="text" name="nip" value="{{ old('nip') }}" required autofocus
+                        class="input-custom block w-full px-4 py-3 rounded-xl outline-none text-sm font-semibold placeholder-slate-400"
+                        placeholder="Masukkan NIP atau Email">
                 </div>
 
-                <div>
-                    <div class="flex justify-between mb-2 ml-1">
-                        <label class="text-sm font-medium text-blue-200">Security Key</label>
+                <div class="space-y-1.5">
+                    <label class="text-[10px] font-bold text-slate-700 ml-1 uppercase tracking-wider">Password</label>
+                    <div class="relative">
+                        <input type="password" name="password" id="password" required
+                            class="input-custom block w-full px-4 py-3 rounded-xl outline-none text-sm font-semibold placeholder-slate-400"
+                            placeholder="Masukkan Password">
+                        <button type="button" id="togglePassword" class="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-blue-600">
+                            <i class="fas fa-eye" id="eyeIcon"></i>
+                        </button>
                     </div>
-                    <div class="relative group">
-                        <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-blue-400 group-focus-within:text-blue-300">
-                            <i class="fas fa-fingerprint text-lg"></i>
-                        </span>
-                        <input type="password" name="password" required
-                            class="input-gradient block w-full pl-12 pr-4 py-4 rounded-2xl outline-none text-sm placeholder-gray-500"
-                            placeholder="••••••••••••">
-                    </div>
-                </div>
-
-                <div class="flex items-center justify-between px-1">
-                    <label class="flex items-center cursor-pointer">
-                        <input type="checkbox" name="remember" class="hidden peer">
-                        <div class="w-5 h-5 border-2 border-blue-500 rounded-md flex items-center justify-center peer-checked:bg-blue-600 peer-checked:border-blue-600 transition-all">
-                            <i class="fas fa-check text-[10px] text-white hidden peer-checked:block"></i>
-                        </div>
-                        <span class="ml-3 text-sm text-blue-200/70">Ingat Sesi Saya</span>
-                    </label>
                 </div>
 
                 <button type="submit" 
-                    class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-4 px-6 rounded-2xl shadow-[0_10px_20px_-5px_rgba(59,130,246,0.5)] transform active:scale-[0.98] transition-all duration-200 uppercase tracking-widest text-xs flex items-center justify-center">
-                    Otentikasi Masuk <i class="fas fa-arrow-right ml-3"></i>
+                    class="btn-primary w-full text-white font-bold py-3 px-6 rounded-xl shadow-lg uppercase tracking-widest text-[10px] flex items-center justify-center group mt-2">
+                    <i class="fas fa-sign-in-alt mr-2"></i> Masuk
                 </button>
             </form>
-        </div>
 
-        <div class="bg-white/5 p-6 text-center border-t border-white/5">
-            <p class="text-[10px] text-blue-300/40 uppercase font-bold tracking-[0.3em]">
-                &copy; 2026 DISHUB KABUPATEN BANDUNG BARAT
-            </p>
+            <div class="absolute bottom-8 left-8 right-8 text-center md:text-left">
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]">
+                    &copy; 2026 DISHUB KABUPATEN BANDUNG BARAT
+                </p>
+                <p class="text-[9px] text-slate-300 mt-0.5 italic font-medium">Optimalisasi Manajemen Aset Daerah secara Digital</p>
+            </div>
+
         </div>
     </div>
 
+    <script>
+        const togglePassword = document.querySelector('#togglePassword');
+        const passwordField = document.querySelector('#password');
+        const eyeIcon = document.querySelector('#eyeIcon');
+
+        togglePassword.addEventListener('click', function () {
+            const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordField.setAttribute('type', type);
+            eyeIcon.classList.toggle('fa-eye');
+            eyeIcon.classList.toggle('fa-eye-slash');
+        });
+    </script>
 </body>
 </html>

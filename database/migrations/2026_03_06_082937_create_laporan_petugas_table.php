@@ -41,6 +41,18 @@ return new class extends Migration
             // Secara default laporan yang baru masuk berstatus 'masuk'
             $table->string('status')->default('masuk'); // masuk, proses, selesai
             
+            // ID Aset (bisa NULL jika stiker hilang)
+            $table->string('id_asset')->nullable();
+            
+            // Sumber laporan
+            $table->string('sumber_laporan')->default('petugas');
+            
+            // Kode Tiket
+            $table->string('ticket_number')->unique()->nullable();
+            
+            // IP Address untuk logging aktivitas
+            $table->string('ip_address', 45)->nullable();
+            
             // --- 05: Audit Timestamps ---
             $table->timestamps(); // Mencatat created_at dan updated_at secara otomatis
         });

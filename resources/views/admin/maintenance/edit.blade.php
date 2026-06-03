@@ -6,16 +6,16 @@
     <div class="bg-white border-b border-slate-200 px-8 py-6 mb-8 shadow-sm">
         <div class="max-w-5xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div>
-                <nav class="flex mb-3 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                <nav class="flex mb-3 text-[10px] font-black tracking-[0.2em] text-slate-400">
                     <a href="{{ route('admin.maintenance.index') }}" class="hover:text-[#0B2A4A] transition-colors">Monitoring</a>
                     <span class="mx-3 text-slate-300">/</span>
                     <span class="text-[#0B2A4A]">{{ isset($maintenance) ? 'Edit Penugasan' : 'Buat Tiket Baru' }}</span>
                 </nav>
-                <h1 class="text-2xl font-black text-[#0B2A4A] uppercase tracking-tighter">
+                <h1 class="text-2xl font-black text-[#0B2A4A]  tracking-tighter">
                     {{ isset($maintenance) ? 'Update Petugas & Jadwal' : 'Registrasi Tiket Maintenance' }}
                 </h1>
             </div>
-            <a href="{{ url()->previous() }}" class="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-rose-500 transition-colors">
+            <a href="{{ route('admin.petugas.tugas-tersedia') }}" class="text-[10px] font-black  tracking-widest text-slate-400 hover:text-rose-500 transition-colors">
                 ← Batal & Kembali
             </a>
         </div>
@@ -47,7 +47,7 @@
                 {{-- Panel Kiri: Info Referensi Laporan --}}
                 <div class="lg:col-span-1 space-y-6">
                     <div class="bg-[#0B2A4A] rounded-[2.5rem] p-8 text-white shadow-2xl relative overflow-hidden">
-                        <p class="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] mb-6">Referensi Laporan</p>
+                        <p class="text-[10px] font-black text-white/40  tracking-[0.2em] mb-6">Referensi Laporan</p>
                         
                         @php $ref = $laporan ?? ($maintenance->report ?? null); @endphp
                         
@@ -55,24 +55,24 @@
                             <div class="space-y-4">
                                 {{-- FOTO KONDISI --}}
                                 <div class="relative group">
-                                    <p class="text-[9px] font-black uppercase text-amber-500 mb-2">Foto Kondisi</p>
+                                    <p class="text-[9px] font-black  text-amber-500 mb-2">Foto Kondisi</p>
                                     @if($ref->foto)
                                         <img src="{{ asset('storage/' . $ref->foto) }}" class="w-full h-48 object-cover rounded-2xl border border-white/10 mb-4 shadow-lg">
                                     @else
                                         <div class="w-full h-32 bg-white/5 rounded-2xl border border-dashed border-white/20 flex items-center justify-center mb-4">
-                                            <span class="text-[10px] text-white/30 uppercase font-bold">Tidak ada foto</span>
+                                            <span class="text-[10px] text-white/30 font-bold">Tidak ada foto</span>
                                         </div>
                                     @endif
                                 </div>
 
                                 <div class="p-4 bg-white/5 rounded-2xl border border-white/10">
-                                    <p class="text-[9px] font-black uppercase text-blue-400 mb-1">Tiket & Judul</p>
+                                    <p class="text-[9px] font-black  text-blue-400 mb-1">Tiket & Judul</p>
                                     <p class="text-xs font-bold font-mono text-amber-400 mb-1">#{{ $ref->ticket_number ?? $ref->ticket_code }}</p>
                                     <p class="text-xs font-bold italic leading-relaxed">"{{ $ref->judul_laporan }}"</p>
                                 </div>
 
                                 <div class="p-4 bg-white/5 rounded-2xl border border-white/10">
-                                    <p class="text-[9px] font-black uppercase text-emerald-400 mb-1">Lokasi & Koordinat</p>
+                                    <p class="text-[9px] font-black  text-emerald-400 mb-1">Lokasi & Koordinat</p>
                                     <p class="text-[10px] font-medium text-white/80 mb-2">{{ $ref->lokasi_koordinat ?? $ref->alamat ?? 'Alamat tidak tersedia' }}</p>
                                     <div class="flex gap-2">
                                         <span class="text-[9px] bg-white/10 px-2 py-1 rounded-md text-white/60 font-mono">LAT: {{ $ref->lat ?? '-' }}</span>
@@ -81,20 +81,20 @@
                                 </div>
                                 
                                 <div class="p-4 bg-rose-500/10 rounded-2xl border border-rose-500/20">
-                                    <p class="text-[9px] font-black uppercase text-rose-400 mb-1">Keluhan Masyarakat</p>
+                                    <p class="text-[9px] font-black  text-rose-400 mb-1">Keluhan Masyarakat</p>
                                     <p class="text-[10px] leading-relaxed text-white/70">{{ $ref->deskripsi_keluhan ?? $ref->isi_laporan }}</p>
                                 </div>
                             </div>
                         @else
                             <div class="p-6 text-center border-2 border-dashed border-white/10 rounded-3xl">
-                                <p class="text-[10px] font-bold text-white/30 uppercase leading-relaxed">Input Internal (Manual)</p>
+                                <p class="text-[10px] font-bold text-white/30  leading-relaxed">Input Internal (Manual)</p>
                             </div>
                         @endif
                     </div>
 
                     @if(isset($maintenance))
                         <div class="bg-amber-50 border border-amber-200 rounded-3xl p-6">
-                            <div class="flex items-center gap-3 text-amber-700 mb-2 font-black text-[10px] uppercase">
+                            <div class="flex items-center gap-3 text-amber-700 mb-2 font-black text-[10px] ">
                                 <i class="fas fa-user-edit"></i> Re-Assign Petugas
                             </div>
                             <p class="text-[10px] text-amber-600 font-bold leading-relaxed">Anda sedang mengubah penugasan. Harap berikan alasan yang jelas agar petugas memahami perubahan ini.</p>
@@ -110,7 +110,7 @@
                             {{-- Kolom 1 --}}
                             <div class="space-y-6">
                                 <div>
-                                    <label class="text-[10px] font-black text-slate-400 uppercase mb-4 block tracking-widest italic">1. Petugas Pelaksana</label>
+                                    <label class="text-[10px] font-black text-slate-400 mb-4 block tracking-widest italic">1. Petugas Pelaksana</label>
                                     <select name="user_id" required class="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-[#0B2A4A] text-xs font-bold focus:ring-2 focus:ring-emerald-500 outline-none transition-all shadow-inner">
                                         <option value="">-- Pilih Petugas --</option>
                                         @foreach($listPetugas as $petugas)
@@ -123,7 +123,7 @@
                                 </div>
 
                                 <div>
-                                    <label class="text-[10px] font-black text-slate-400 uppercase mb-4 block tracking-widest italic">2. Target Selesai (Deadline)</label>
+                                    <label class="text-[10px] font-black text-slate-400  mb-4 block tracking-widest italic">2. Target Selesai (Deadline)</label>
                                     <input type="date" 
                                            value="{{ old('deadline', isset($maintenance->deadline) ? \Carbon\Carbon::parse($maintenance->deadline)->format('Y-m-d') : '') }}" 
                                            disabled
@@ -131,14 +131,14 @@
                                 </div>
 
                                 <div>
-                                    <label class="text-[10px] font-black text-slate-400 uppercase mb-4 block tracking-widest italic">Kepemilikan Aset</label>
+                                    <label class="text-[10px] font-black text-slate-400  mb-4 block tracking-widest italic">Kepemilikan Aset</label>
                                     <div class="flex gap-4 opacity-60">
                                         @php $currentOwner = old('is_dishub', $maintenance->is_dishub ?? 1); @endphp
                                         <label class="flex-1">
-                                            <div class="p-3 text-center border-2 {{ $currentOwner == 1 ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-slate-100 text-slate-400' }} rounded-xl text-[10px] font-black uppercase">Dishub</div>
+                                            <div class="p-3 text-center border-2 {{ $currentOwner == 1 ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-slate-100 text-slate-400' }} rounded-xl text-[10px] font-black ">Dishub</div>
                                         </label>
                                         <label class="flex-1">
-                                            <div class="p-3 text-center border-2 {{ $currentOwner == 0 ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-slate-100 text-slate-400' }} rounded-xl text-[10px] font-black uppercase">Umum</div>
+                                            <div class="p-3 text-center border-2 {{ $currentOwner == 0 ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-slate-100 text-slate-400' }} rounded-xl text-[10px] font-black ">Umum</div>
                                         </label>
                                     </div>
                                 </div>
@@ -147,14 +147,14 @@
                             {{-- Kolom 2 --}}
                             <div class="space-y-6">
                                 <div>
-                                    <label class="text-[10px] font-black text-slate-400 uppercase mb-4 block tracking-widest italic">3. Kategori Aset</label>
+                                    <label class="text-[10px] font-black text-slate-400  mb-4 block tracking-widest italic">3. Kategori Aset</label>
                                     <select disabled class="w-full bg-slate-100 border border-slate-200 rounded-2xl p-4 text-slate-500 text-xs font-bold cursor-not-allowed">
                                         <option>{{ old('category_id', $maintenance->category ?? ($laporan->kategori_laporan ?? '')) }}</option>
                                     </select>
                                 </div>
 
                                 <div>
-                                    <label class="text-[10px] font-black text-slate-400 uppercase mb-4 block tracking-widest italic">4. Jenis Spesifik</label>
+                                    <label class="text-[10px] font-black text-slate-400  mb-4 block tracking-widest italic">4. Jenis Spesifik</label>
                                     <select disabled class="w-full bg-slate-100 border border-slate-200 rounded-2xl p-4 text-slate-500 text-xs font-bold cursor-not-allowed">
                                         <option>{{ old('jenis_aset', $maintenance->jenis_aset ?? '') }}</option>
                                     </select>
@@ -164,7 +164,7 @@
 
                         {{-- Instruksi --}}
                         <div>
-                            <label class="text-[10px] font-black text-slate-400 uppercase mb-4 block tracking-widest italic">5. Instruksi Perbaikan</label>
+                            <label class="text-[10px] font-black text-slate-400  mb-4 block tracking-widest italic">5. Instruksi Perbaikan</label>
                             <textarea name="description" rows="3" required 
                                 class="w-full bg-slate-50 border border-slate-200 rounded-2xl p-5 text-[#0B2A4A] text-xs font-medium outline-none focus:ring-2 focus:ring-indigo-500 transition-all resize-none shadow-inner"
                                 placeholder="Tulis instruksi pengerjaan untuk petugas...">{{ old('description', $maintenance->description ?? ($laporan->deskripsi_keluhan ?? '')) }}</textarea>
@@ -172,7 +172,7 @@
 
                         {{-- Alasan Ganti Petugas / Catatan Edit --}}
                         <div>
-                            <label class="text-[10px] font-black text-rose-500 uppercase mb-4 block tracking-widest italic">6. Alasan Perubahan Data (Wajib)</label>
+                            <label class="text-[10px] font-black text-rose-500 mb-4 block tracking-widest italic">6. Alasan Perubahan Data (Wajib)</label>
                             <textarea name="edit_reason" rows="3" required 
                                 class="w-full bg-amber-50/50 border-2 border-amber-200 rounded-2xl p-5 text-[#0B2A4A] text-xs font-bold outline-none focus:border-amber-500 transition-all resize-none shadow-sm"
                                 placeholder="Jelaskan alasan perubahan petugas atau jadwal...">{{ old('edit_reason', $maintenance->edit_reason ?? '') }}</textarea>
@@ -182,7 +182,7 @@
                         </div>
 
                         <div class="pt-6 border-t border-slate-100 flex gap-4">
-                            <button type="submit" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-lg transition-all active:scale-[0.98]">
+                            <button type="submit" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-5 rounded-2xl font-black text-xs tracking-[0.2em] shadow-lg transition-all active:scale-[0.98]">
                                 <i class="fas fa-save mr-2"></i> SIMPAN PERUBAHAN TIKET
                             </button>
                         </div>

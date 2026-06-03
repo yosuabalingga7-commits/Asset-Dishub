@@ -4,10 +4,10 @@
 <div class="p-8">
     <div class="flex justify-between items-center mb-8">
         <div>
-            <h1 class="text-2xl font-black text-slate-800 uppercase tracking-tight">Kategori Aset</h1>
+            <h1 class="text-2xl font-black text-slate-800 tracking-tight">Kategori Aset</h1>
             <p class="text-sm text-slate-500 font-medium">Pengelompokan besar inventaris Dishub KBB.</p>
         </div>
-        <button class="px-5 py-2.5 bg-indigo-600 text-white text-xs font-bold rounded-xl shadow-lg hover:bg-indigo-700 transition-all uppercase tracking-widest">
+        <button class="px-5 py-2.5 bg-indigo-600 text-white text-xs font-bold rounded-xl shadow-lg hover:bg-indigo-700 transition-all  tracking-widest">
             + Tambah Kategori
         </button>
     </div>
@@ -16,10 +16,10 @@
         <table class="w-full text-left">
             <thead>
                 <tr class="bg-slate-50/50 border-b border-slate-200">
-                    <th class="p-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">No</th>
-                    <th class="p-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Nama Kategori</th>
-                    <th class="p-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Kode</th>
-                    <th class="p-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Aksi</th>
+                    <th class="p-5 text-[10px] font-black text-slate-400 tracking-widest">No</th>
+                    <th class="p-5 text-[10px] font-black text-slate-400 tracking-widest">Nama Kategori</th>
+                    <th class="p-5 text-[10px] font-black text-slate-400 tracking-widest">Kode</th>
+                    <th class="p-5 text-[10px] font-black text-slate-400  tracking-widest text-center">Aksi</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">

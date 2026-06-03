@@ -41,7 +41,8 @@ class UserManagementController extends Controller
             'email'    => 'required|email|unique:users,email',
             'password' => 'required|min:6',
             'no_wa'    => 'required|unique:users,no_wa', // Cek duplikat WA
-            'seksi_id' => 'required|exists:seksis,id', 
+            'seksi_id' => ($request->role === 'admin' || $request->role === 'kadis' || $request->role === 'petugas_lapangan') ? 'nullable' : 'required|exists:seksis,id', 
+            'role'     => 'required|in:admin,seksi,kadis,petugas_lapangan', // Tambahan validasi role
         ], [
             'name.required'     => 'Nama lengkap wajib diisi.',
             'nip.required'      => 'NIP / Username wajib diisi.',
@@ -55,6 +56,7 @@ class UserManagementController extends Controller
             'no_wa.required'    => 'Nomor WhatsApp wajib diisi.',
             'no_wa.unique'      => 'Gagal! Nomor WhatsApp ini sudah terdaftar. Gunakan nomor lain.',
             'seksi_id.required' => 'Bidang/Seksi wajib dipilih.',
+            'role.required'     => 'Role user wajib dipilih.',
         ]);
 
         try {
@@ -65,14 +67,14 @@ class UserManagementController extends Controller
                 'email'          => $request->email,
                 'password'       => Hash::make($request->password),
                 'password_plain' => $request->password, // Simpan password asli untuk Admin
-                'role'           => 'seksi', 
+                'role'           => $request->role, // Diubah agar dinamis sesuai input (admin/seksi/kadis/petugas_lapangan)
                 'no_wa'          => $request->no_wa,
-                'seksi_id'       => $request->seksi_id,
+                'seksi_id'       => ($request->role === 'admin' || $request->role === 'kadis' || $request->role === 'petugas_lapangan') ? null : $request->seksi_id,
                 'status'         => 'aktif', 
                 'is_active'      => true,
             ]);
 
-            return redirect()->route('admin.users.index')->with('success', 'Akun Seksi berhasil didaftarkan!');
+            return redirect()->route('admin.users.index')->with('success', 'Akun berhasil didaftarkan!');
 
         } catch (\Exception $e) {
             // Jika masih ada error database tak terduga, tampilkan pesan yang lebih rapi
@@ -99,19 +101,33 @@ class UserManagementController extends Controller
         }
 
         $request->validate([
-            'name'  => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $user->id,
-            'no_wa' => 'nullable|unique:users,no_wa,' . $user->id,
-            'seksi_id' => 'required|exists:seksis,id', 
+            'name'     => 'nullable|string|max:255',
+            'email'    => 'required|email|unique:users,email,' . $user->id,
+            'no_wa'    => 'nullable|unique:users,no_wa,' . $user->id,
+            'seksi_id' => 'nullable|exists:seksis,id',
+            'role'     => 'nullable|in:admin,seksi,kadis,petugas_lapangan',
         ], [
             'email.unique' => 'Email sudah digunakan akun lain.',
             'no_wa.unique' => 'Nomor WhatsApp sudah terdaftar.',
         ]);
 
-        $user->name = $request->name;
+        if ($request->filled('name')) {
+            $user->name = $request->name;
+        }
+        
         $user->email = $request->email;
-        $user->seksi_id = $request->seksi_id;
-        $user->no_wa = $request->no_wa;
+        
+        if ($request->filled('seksi_id')) {
+            $user->seksi_id = $request->seksi_id;
+        }
+        
+        if ($request->filled('no_wa')) {
+            $user->no_wa = $request->no_wa;
+        }
+        
+        if ($request->filled('role')) {
+            $user->role = $request->role;
+        }
 
         if ($request->filled('password')) {
             $user->password = Hash::make($request->password);
@@ -132,5 +148,18 @@ class UserManagementController extends Controller
         
         $user->delete();
         return back()->with('success', 'Akun berhasil dihapus!');
+    }
+
+    // ============================================
+    // API METHODS UNTUK DASHBOARD DINAMIS
+    // ============================================
+
+    /**
+     * API: Mendapatkan total pegawai yang terdaftar di aplikasi
+     */
+    public function getTotalPegawai()
+    {
+        $total = User::count();
+        return response()->json(['total' => $total]);
     }
 }

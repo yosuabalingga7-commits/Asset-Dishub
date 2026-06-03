@@ -20,6 +20,12 @@ class ManajemenController extends Controller
         $setting = DB::table('map_settings')->first();
         $assets = Asset::all(); 
 
+        // Ambil data sidebar_categories
+        $sidebar_categories = DB::table('assets')
+            ->select('kategori', DB::raw('count(*) as total_aset'), DB::raw('count(distinct jenis) as total_jenis'))
+            ->groupBy('kategori')
+            ->get();
+
         $mapConfig = [
             'center'      => [
                 (float)($setting->latitude ?? -6.8431), 
@@ -29,7 +35,7 @@ class ManajemenController extends Controller
             'detailZoom'  => 19, 
         ];
 
-        return view('admin.assets.Dashboard', compact('mapConfig', 'assets'));
+        return view('admin.assets.Dashboard', compact('mapConfig', 'assets', 'sidebar_categories'));
     }
 
     /**

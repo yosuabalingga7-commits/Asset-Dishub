@@ -35,7 +35,7 @@ class DatabaseSeeder extends Seeder
                 'name' => 'Yosua Balingga', 
                 'email' => 'admin@kbb.go.id',
                 'password' => Hash::make('password123'), 
-                'role' => 'super_admin',
+                'role' => 'admin',
                 'no_wa' => '6281234567890',
                 'foto' => null,
                 'status' => 'aktif', // Ditambahkan agar sinkron dengan kolom baru

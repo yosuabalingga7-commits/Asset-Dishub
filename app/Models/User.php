@@ -23,10 +23,11 @@ class User extends Authenticatable
         'password_plain', // TAMBAHKAN INI
         'no_wa',      // Digunakan untuk Bot WhatsApp
         'foto',        
-        'role',       // super_admin, seksi
+        'role',       // admin, seksi, kadis, petugas_lapangan
         'seksi_id',   // ID Seksi untuk pembagian tugas
         'status',     // TAMBAHKAN INI AGAR BISA DISIMPAN
         'is_active',
+        'profile_photo_path', // TAMBAHKAN INI UNTUK FOTO PROFIL
     ];
 
     /**
@@ -44,7 +45,6 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
             'is_active' => 'boolean',
             'seksi_id' => 'integer',
         ];
@@ -52,9 +52,6 @@ class User extends Authenticatable
 
     // --- HELPER FUNCTIONS UNTUK ROLE ---
 
-    /**
-     * Method untuk mengecek role (Menyelesaikan error BadMethodCallException)
-     */
     public function hasRole($role): bool
     {
         return $this->role === $role;
@@ -62,7 +59,7 @@ class User extends Authenticatable
 
     public function isSuperAdmin(): bool
     {
-        return $this->role === 'super_admin';
+        return $this->role === 'admin';
     }
 
     public function isSeksi(): bool
@@ -71,24 +68,31 @@ class User extends Authenticatable
     }
 
     /**
-     * Relasi ke model Seksi (Bidang)
+     * Cek apakah user adalah Kepala Dinas (Kadis)
      */
+    public function isKadis(): bool
+    {
+        return $this->role === 'kadis';
+    }
+
+    /**
+     * Cek apakah user adalah Petugas Lapangan
+     */
+    public function isPetugasLapangan(): bool
+    {
+        return $this->role === 'petugas_lapangan';
+    }
+
     public function seksi(): BelongsTo
     {
         return $this->belongsTo(Seksi::class, 'seksi_id');
     }
 
-    /**
-     * Relasi ke Tiket Maintenance
-     */
     public function maintenanceTickets(): HasMany
     {
         return $this->hasMany(MaintenanceTicket::class, 'user_id');
     }
 
-    /**
-     * Relasi ke Task Logs
-     */
     public function logs(): HasMany
     {
         return $this->hasMany(TaskLog::class);

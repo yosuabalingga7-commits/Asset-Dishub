@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Support\Facades\Auth;
 
 class ProfileController extends Controller
 {
@@ -47,5 +48,49 @@ class ProfileController extends Controller
         $user->save();
 
         return back()->with('success', 'Profil Anda berhasil diperbarui!');
+    }
+
+    // Fungsi Update Foto dengan Dukungan Cropping (Base64)
+    public function updateFoto(Request $request)
+    {
+        $user = Auth::user();
+
+        // Cek jika ada kiriman data cropped image
+        if ($request->filled('cropped_image')) {
+            $imageData = $request->cropped_image;
+            
+            // Decode Base64 string
+            $image_parts = explode(";base64,", $imageData);
+            $image_base64 = base64_decode($image_parts[1]);
+            
+            // Nama file unik
+            $fileName = 'profile-photos/' . uniqid() . '.jpg';
+
+            // Simpan ke storage (public disk)
+            Storage::disk('public')->put($fileName, $image_base64);
+
+            // Hapus foto lama jika ada
+            if ($user->profile_photo_path && Storage::disk('public')->exists($user->profile_photo_path)) {
+                Storage::disk('public')->delete($user->profile_photo_path);
+            }
+
+            // Update path di DB
+            $user->profile_photo_path = $fileName;
+            $user->save();
+
+            return back()->with('success', 'Foto profil berhasil diperbarui!');
+        }
+
+        // Fallback untuk upload biasa jika dibutuhkan
+        if ($request->hasFile('profile_photo')) {
+            $request->validate(['profile_photo' => 'image|max:2048']);
+            if ($user->profile_photo_path) { Storage::delete($user->profile_photo_path); }
+            $path = $request->file('profile_photo')->store('profile-photos', 'public');
+            $user->profile_photo_path = $path;
+            $user->save();
+            return back()->with('success', 'Foto profil berhasil diperbarui!');
+        }
+
+        return back()->with('error', 'Gagal memproses foto.');
     }
 }

@@ -4,21 +4,19 @@ namespace App\Http\Controllers;
 
 use App\Models\MaintenanceTicket; 
 use App\Models\User;
+use App\Models\Asset;
+use App\Models\LaporanMasyarakat;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 
 class PenugasanController extends Controller
 {
-    /**
-     * Menampilkan Halaman Tugas Tersedia untuk Petugas yang Login
-     */
     public function tugasTersedia()
     {
-        $seksiId = Auth::user()->seksi_id;
-
+        $userId = Auth::id();
         $tasks = MaintenanceTicket::with(['asset', 'report'])
-            ->where('seksi_id', $seksiId) 
+            ->where('user_id', $userId)
             ->where('status', 'proses')
             ->orderBy('created_at', 'desc')
             ->get();
@@ -26,15 +24,11 @@ class PenugasanController extends Controller
         return view('admin.petugas.tugas-tersedia', compact('tasks'));
     }
 
-    /**
-     * Menampilkan Riwayat Tugas Selesai untuk Petugas yang Login
-     */
     public function riwayatTugas()
     {
-        $seksiId = Auth::user()->seksi_id;
-
+        $userId = Auth::id();
         $tasks = MaintenanceTicket::with(['asset', 'report'])
-            ->where('seksi_id', $seksiId) 
+            ->where('user_id', $userId)
             ->where('status', 'selesai')
             ->orderBy('finished_at', 'desc')
             ->get();
@@ -122,6 +116,14 @@ class PenugasanController extends Controller
                 $updateData['foto_perbaikan'] = $path;
                 $updateData['finished_at'] = now();
                 $updateData['completion_notes'] = $request->note;
+
+                // SINKRONISASI KE ASET & LAPORAN
+                if ($ticket->asset_id) {
+                    Asset::where('id', $ticket->asset_id)->update(['status' => 'Baik']);
+                }
+                if ($ticket->report_id) {
+                    LaporanMasyarakat::where('id', $ticket->report_id)->update(['status' => 'Selesai']);
+                }
             }
 
             $ticket->update($updateData);
