@@ -26,7 +26,7 @@ return new class extends Migration
              * seksi: Monitoring & eksekusi tugas per bidang.
              * kadis: Kepala Dinas (view only untuk dashboard eksekutif)
              */
-            $table->enum('role', ['admin', 'seksi', 'kadis'])->default('seksi');
+            $table->enum('role', ['admin', 'seksi', 'kadis', 'petugas_lapangan'])->default('seksi');
             
             // --- IDENTITAS SEKSI (WAJIB UNTUK PEMBAGIAN TUGAS) ---
             $table->unsignedBigInteger('seksi_id')->nullable(); 

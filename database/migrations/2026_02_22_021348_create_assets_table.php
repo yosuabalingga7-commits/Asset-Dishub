@@ -25,9 +25,8 @@ return new class extends Migration
             $table->string('status')->default('Baik'); // Baik, Rusak, Kritis, Proses
             $table->text('alamat')->nullable();
             
-            // Standar Koordinat GIS (Sangat presisi)
-            $table->decimal('lat', 10, 8);
-            $table->decimal('lng', 11, 8);
+            // Koordinat Geografis (PostGIS Geometry Point)
+            $table->geometry('coordinates', subtype: 'point', srid: 4326);
             
             $table->string('foto')->nullable();    // Path file foto aset
             $table->date('tgl_pemasangan')->nullable();

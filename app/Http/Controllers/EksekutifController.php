@@ -4,11 +4,9 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Asset;
-use App\Models\LaporanMasyarakat;
-use App\Models\LaporanPetugas;
+use App\Models\Report;
 use App\Models\MaintenanceTicket;
 use App\Models\User;
-use App\Models\Pengaduan;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -27,20 +25,19 @@ class EksekutifController extends Controller
         $data['total_petugas'] = User::where('role', 'seksi')->count();
         
         // PENGADUAN MASUK (Semua pengaduan dari berbagai sumber)
-        $data['laporan_masyarakat'] = LaporanMasyarakat::count();
-        $data['laporan_petugas'] = LaporanPetugas::count();
-        $data['pengaduan_masuk'] = Pengaduan::count();
-        $data['total_pengaduan'] = $data['laporan_masyarakat'] + $data['laporan_petugas'] + $data['pengaduan_masuk'];
+        $data['laporan_masyarakat'] = Report::where('source', 'masyarakat')->count();
+        $data['laporan_petugas'] = Report::where('source', 'petugas')->count();
+        $data['pengaduan_masuk'] = 0;
+        $data['total_pengaduan'] = $data['laporan_masyarakat'] + $data['laporan_petugas'];
 
         // STATUS PERBAIKAN (Monitoring Progress)
         $data['perbaikan_proses'] = MaintenanceTicket::where('status', 'proses')->count();
         $data['perbaikan_selesai'] = MaintenanceTicket::where('status', 'selesai')->count();
         
         // SELESAI DITANGANI (Laporan yang sudah selesai dari semua sumber)
-        $laporanMasyarakatSelesai = LaporanMasyarakat::where('status', 'selesai')->count();
-        $laporanPetugasSelesai = LaporanPetugas::where('status', 'selesai')->count();
-        $pengaduanSelesai = Pengaduan::where('status', 'selesai')->count();
-        $data['total_selesai'] = $laporanMasyarakatSelesai + $laporanPetugasSelesai + $pengaduanSelesai;
+        $laporanMasyarakatSelesai = Report::where('source', 'masyarakat')->where('status', 'selesai')->count();
+        $laporanPetugasSelesai = Report::where('source', 'petugas')->where('status', 'selesai')->count();
+        $data['total_selesai'] = $laporanMasyarakatSelesai + $laporanPetugasSelesai;
         
         // Data untuk Grafik Status Aset
         $data['status_aset'] = Asset::select('status', DB::raw('count(*) as total'))

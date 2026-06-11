@@ -33,12 +33,12 @@ class Asset extends Model
     ];
 
     protected $casts = [
-        'lat' => 'double',
-        'lng' => 'double',
         'tgl_pemasangan' => 'date', 
     ];
 
-    protected $appends = ['foto_url'];
+    protected $tempLatLng = [];
+
+    protected $appends = ['foto_url', 'lat', 'lng'];
 
     public function getFotoUrlAttribute()
     {
@@ -51,6 +51,99 @@ class Asset extends Model
     public function setIdAssetAttribute($value)
     {
         $this->attributes['id_asset'] = strtoupper($value);
+    }
+
+    public function getLatAttribute()
+    {
+        if (array_key_exists('lat', $this->tempLatLng)) {
+            return (float) $this->tempLatLng['lat'];
+        }
+        $coords = $this->parseCoordinates();
+        return $coords ? (float) $coords['lat'] : null;
+    }
+
+    public function getLngAttribute()
+    {
+        if (array_key_exists('lng', $this->tempLatLng)) {
+            return (float) $this->tempLatLng['lng'];
+        }
+        $coords = $this->parseCoordinates();
+        return $coords ? (float) $coords['lng'] : null;
+    }
+
+    public function setLatAttribute($value)
+    {
+        $this->tempLatLng['lat'] = $value;
+        $this->updateCoordinatesFromLatLng();
+    }
+
+    public function setLngAttribute($value)
+    {
+        $this->tempLatLng['lng'] = $value;
+        $this->updateCoordinatesFromLatLng();
+    }
+
+    protected function updateCoordinatesFromLatLng()
+    {
+        $lat = $this->tempLatLng['lat'] ?? $this->lat;
+        $lng = $this->tempLatLng['lng'] ?? $this->lng;
+
+        if ($lat !== null && $lng !== null) {
+            $this->attributes['coordinates'] = \DB::raw("ST_GeomFromText('POINT($lng $lat)', 4326)");
+        }
+    }
+
+    protected function parseCoordinates()
+    {
+        if (!isset($this->attributes['coordinates'])) {
+            return null;
+        }
+
+        $wkb = $this->attributes['coordinates'];
+        
+        if (is_resource($wkb)) {
+            $wkb = stream_get_contents($wkb);
+        }
+
+        if (empty($wkb)) {
+            return null;
+        }
+
+        if (!ctype_xdigit($wkb)) {
+            $wkb = bin2hex($wkb);
+        }
+
+        $byteOrder = substr($wkb, 0, 2);
+        $isLittleEndian = ($byteOrder === '01');
+
+        $type = substr($wkb, 2, 8);
+        $typeVal = hexdec($isLittleEndian ? strrev(implode('', str_split($type, 2))) : $type);
+        $hasSRID = ($typeVal & 0x20000000);
+        
+        $offset = 10;
+        if ($hasSRID) {
+            $offset += 8;
+        }
+
+        $xHex = substr($wkb, $offset, 16);
+        $yHex = substr($wkb, $offset + 16, 16);
+
+        if (strlen($xHex) < 16 || strlen($yHex) < 16) {
+            return null;
+        }
+
+        $xBin = hex2bin($xHex);
+        $yBin = hex2bin($yHex);
+
+        if ($isLittleEndian) {
+            $xBin = strrev($xBin);
+            $yBin = strrev($yBin);
+        }
+
+        $x = unpack('d', $xBin)[1];
+        $y = unpack('d', $yBin)[1];
+
+        return ['lat' => $y, 'lng' => $x];
     }
 
     /**
@@ -71,24 +164,17 @@ class Asset extends Model
 
     /**
      * Scope untuk mencari SEMUA aset dalam radius tertentu
-     * Mengembalikan semua aset (bukan hanya 1) yang jaraknya <= radius
-     *
-     * @param Builder $query
-     * @param float $lat Latitude pelapor
-     * @param float $lng Longitude pelapor
-     * @param int $radius Radius pencarian dalam meter
-     * @return Builder
      */
     public function scopeWithinRadius(Builder $query, float $lat, float $lng, int $radius = 100)
     {
         return $query
             ->select('*')
             ->selectRaw(
-                'ST_Distance_Sphere(point(lng, lat), point(?, ?)) as distance',
+                'ST_DistanceSphere(coordinates, ST_SetSRID(ST_MakePoint(?, ?), 4326)) as distance',
                 [$lng, $lat]
             )
             ->whereRaw(
-                'ST_Distance_Sphere(point(lng, lat), point(?, ?)) <= ?',
+                'ST_DistanceSphere(coordinates, ST_SetSRID(ST_MakePoint(?, ?), 4326)) <= ?',
                 [$lng, $lat, $radius]
             )
             ->orderBy('distance', 'asc');
@@ -96,24 +182,17 @@ class Asset extends Model
 
     /**
      * Scope untuk mencari aset terdekat berdasarkan koordinat
-     * Menggunakan ST_Distance_Sphere untuk akurasi tinggi dalam radius meter
-     *
-     * @param Builder $query
-     * @param float $lat Latitude pelapor
-     * @param float $lng Longitude pelapor
-     * @param int $radius Radius pencarian dalam meter (default: 5 meter)
-     * @return Builder
      */
     public function scopeNearest(Builder $query, float $lat, float $lng, int $radius = 5)
     {
         return $query
             ->select('*')
             ->selectRaw(
-                'ST_Distance_Sphere(point(lng, lat), point(?, ?)) as distance',
+                'ST_DistanceSphere(coordinates, ST_SetSRID(ST_MakePoint(?, ?), 4326)) as distance',
                 [$lng, $lat]
             )
             ->whereRaw(
-                'ST_Distance_Sphere(point(lng, lat), point(?, ?)) <= ?',
+                'ST_DistanceSphere(coordinates, ST_SetSRID(ST_MakePoint(?, ?), 4326)) <= ?',
                 [$lng, $lat, $radius]
             )
             ->orderBy('distance', 'asc')
@@ -122,24 +201,17 @@ class Asset extends Model
 
     /**
      * Scope untuk mencari aset terdekat yang TERSEDIA (status 'Baik')
-     * Hanya mengembalikan aset dengan status 'Baik' yang bisa dilaporkan
-     *
-     * @param Builder $query
-     * @param float $lat Latitude pelapor
-     * @param float $lng Longitude pelapor
-     * @param int $radius Radius pencarian dalam meter
-     * @return Builder
      */
     public function scopeNearestAvailable(Builder $query, float $lat, float $lng, int $radius = 5)
     {
         return $query
             ->select('*')
             ->selectRaw(
-                'ST_Distance_Sphere(point(lng, lat), point(?, ?)) as distance',
+                'ST_DistanceSphere(coordinates, ST_SetSRID(ST_MakePoint(?, ?), 4326)) as distance',
                 [$lng, $lat]
             )
             ->whereRaw(
-                'ST_Distance_Sphere(point(lng, lat), point(?, ?)) <= ?',
+                'ST_DistanceSphere(coordinates, ST_SetSRID(ST_MakePoint(?, ?), 4326)) <= ?',
                 [$lng, $lat, $radius]
             )
             ->where('status', 'Baik')
@@ -149,7 +221,6 @@ class Asset extends Model
 
     /**
      * Cek apakah aset tersedia untuk dilaporkan
-     * Returns true jika status = 'Baik'
      */
     public function isAvailableForReport(): bool
     {
@@ -158,7 +229,6 @@ class Asset extends Model
 
     /**
      * Cek apakah aset sedang dalam proses perbaikan
-     * Returns true jika status = 'Rusak', 'Kritis', atau 'Proses Perbaikan'
      */
     public function isUnderMaintenance(): bool
     {

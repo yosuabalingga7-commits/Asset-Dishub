@@ -60,7 +60,9 @@ class DatabaseSeeder extends Seeder
 
         // 4. MEMANGGIL SEEDER LAINNYA (JIKA ADA)
         $this->call([
-            // Tambahkan seeder lain di sini jika sudah buat file-nya
+            CategorySeeder::class,
+            AssetSeeder::class,
+            PengaduanSeeder::class,
         ]);
     }
 }

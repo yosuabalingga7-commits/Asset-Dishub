@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\MaintenanceTicket; 
-use App\Models\LaporanMasyarakat;
+use App\Models\Report;
 use App\Models\Asset; 
 use App\Models\User; 
 use App\Models\Category;
@@ -30,12 +30,12 @@ class MaintenanceController extends Controller
             ->get();
 
         // LOGIKA: Ambil laporan masyarakat yang statusnya "Proses Perbaikan" tapi BELUM memiliki tiket
-        $laporanWarga = LaporanMasyarakat::where('status', 'Proses Perbaikan')
+        $laporanWarga = Report::where('status', 'Proses Perbaikan')
             ->whereDoesntHave('tiket') // Menggunakan relasi 'tiket' sesuai diskusi sebelumnya
             ->orderBy('updated_at', 'desc')
             ->get();
 
-        $dataTickets = $ticketsFromDb->map(function ($ticket) {
+        $dataTickets = $ticketsFromDb->map(function (MaintenanceTicket $ticket) {
             $safeFormat = function($date) {
                 if (!$date) return '-';
                 try {
@@ -132,7 +132,7 @@ class MaintenanceController extends Controller
     public function create(Request $request)
     {
         $reportId = $request->query('report_id');
-        $laporan = $reportId ? LaporanMasyarakat::find($reportId) : null;
+        $laporan = $reportId ? Report::find($reportId) : null;
         
         // Logika tambahan: Jika laporan sudah punya tiket, arahkan ke tiket tersebut
         if($laporan && $laporan->tiket) {
@@ -179,7 +179,7 @@ class MaintenanceController extends Controller
 
         try {
             $userDb = User::findOrFail($request->user_id);
-            $laporan = LaporanMasyarakat::find($request->report_id);
+            $laporan = Report::find($request->report_id);
             
             // CEK DOUBLE INPUT: Pastikan laporan belum punya tiket
             if ($laporan && $laporan->tiket) {
@@ -227,7 +227,7 @@ class MaintenanceController extends Controller
                 ]);
 
                 if ($request->report_id) {
-                    LaporanMasyarakat::where('id', $request->report_id)->update([
+                    Report::where('id', $request->report_id)->update([
                         'status' => 'Proses Perbaikan',
                         'kepemilikan' => $fixKepemilikan,
                         'updated_at' => now()
@@ -318,7 +318,7 @@ class MaintenanceController extends Controller
                     ]);
                 }
                 if ($maintenance->report_id) {
-                    LaporanMasyarakat::where('id', $maintenance->report_id)->update(['status' => 'Selesai']);
+                    Report::where('id', $maintenance->report_id)->update(['status' => 'Selesai']);
                 }
             }
 

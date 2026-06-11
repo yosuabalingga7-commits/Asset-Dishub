@@ -17,25 +17,7 @@ class ManajemenController extends Controller
      */
     public function gis()
     {
-        $setting = DB::table('map_settings')->first();
-        $assets = Asset::all(); 
-
-        // Ambil data sidebar_categories
-        $sidebar_categories = DB::table('assets')
-            ->select('kategori', DB::raw('count(*) as total_aset'), DB::raw('count(distinct jenis) as total_jenis'))
-            ->groupBy('kategori')
-            ->get();
-
-        $mapConfig = [
-            'center'      => [
-                (float)($setting->latitude ?? -6.8431), 
-                (float)($setting->longitude ?? 107.4912)
-            ], 
-            'defaultZoom' => (int)($setting->zoom ?? 11), 
-            'detailZoom'  => 19, 
-        ];
-
-        return view('admin.assets.Dashboard', compact('mapConfig', 'assets', 'sidebar_categories'));
+        return view('admin.gis.index');
     }
 
     /**

@@ -11,15 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('pengaduan_logs', function (Blueprint $table) {
+        Schema::create('report_logs', function (Blueprint $table) {
             $table->id();
             
-            /** * Relasi ke tabel pengaduans (Laporan Utama)
+            /** * Relasi ke tabel reports (Laporan Utama)
              * Menggunakan index() agar pencarian riwayat laporan yang datanya ribuan tetap cepat.
              */
-            $table->foreignId('pengaduan_id')
+            $table->foreignId('report_id')
                   ->index() 
-                  ->constrained('pengaduans')
+                  ->constrained('reports')
                   ->onDelete('cascade');
 
             /** * Relasi ke tabel users (Admin/Petugas yang memproses)
@@ -42,6 +42,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('pengaduan_logs');
+        Schema::dropIfExists('report_logs');
     }
 };

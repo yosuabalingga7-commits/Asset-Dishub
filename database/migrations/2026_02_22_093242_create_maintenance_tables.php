@@ -30,8 +30,8 @@ return new class extends Migration
             
             $table->unsignedBigInteger('category_id')->nullable(); 
             
-            // Relasi Report (Pastikan tabel laporan_masyarakats sudah dibuat sebelumnya)
-            $table->foreignId('report_id')->nullable()->constrained('laporan_masyarakats')->onDelete('cascade');
+            // Relasi Report (Pastikan tabel reports sudah dibuat sebelumnya)
+            $table->foreignId('report_id')->nullable()->constrained('reports')->onDelete('cascade');
             
             $table->string('priority')->default('normal'); 
             $table->string('status')->default('pending');  

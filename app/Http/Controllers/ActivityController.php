@@ -3,8 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\LaporanMasyarakat;
-use App\Models\LaporanPetugas;
+use App\Models\Report;
 use App\Models\Asset;
 use App\Models\MaintenanceTicket;
 use App\Models\User;
@@ -15,13 +14,10 @@ class ActivityController extends Controller
 {
     public function index()
     {
-        // Ambil data logs dari database (misalnya dari tabel logs atau dari relasi model)
-        // Jika belum ada tabel logs, kita akan mengambil data dari berbagai sumber
-        
         $logs = collect();
         
         // 1. Ambil data laporan masyarakat terbaru (CREATE)
-        $laporanMasyarakat = LaporanMasyarakat::orderBy('created_at', 'desc')->take(10)->get();
+        $laporanMasyarakat = Report::where('source', 'masyarakat')->orderBy('created_at', 'desc')->take(10)->get();
         foreach ($laporanMasyarakat as $item) {
             $logs->push([
                 'user'      => $item->nama_pelapor,
@@ -40,7 +36,7 @@ class ActivityController extends Controller
         }
         
         // 2. Ambil data laporan petugas terbaru (CREATE)
-        $laporanPetugas = LaporanPetugas::orderBy('created_at', 'desc')->take(10)->get();
+        $laporanPetugas = Report::where('source', 'petugas')->orderBy('created_at', 'desc')->take(10)->get();
         foreach ($laporanPetugas as $item) {
             $logs->push([
                 'user'      => $item->nama_petugas,
@@ -128,7 +124,7 @@ class ActivityController extends Controller
                 'modul'     => 'MAINTENANCE',
                 'risk'      => 'LOW',
                 'action'    => 'Memperbarui Status Tiket',
-                'target'    => '#' . ($item->ticket_number ?? 'MTC-' . $item->id),
+                'target'    => '#' . ($item->ticket_code ?? 'MTC-' . $item->id),
                 'desc'      => 'Status tiket maintenance diperbarui menjadi: ' . ($item->status ?? 'Diproses'),
                 'time'      => $item->updated_at->format('d M Y - H:i:s'),
                 'ip'        => '127.0.0.1',

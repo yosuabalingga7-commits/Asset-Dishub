@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Petugas;
 
 use App\Http\Controllers\Controller;
 use App\Models\MaintenanceTicket; 
-use App\Models\LaporanMasyarakat;
+use App\Models\Report;
 use App\Models\Asset;
 use App\Models\User;
 use App\Notifications\MaintenanceNotification;
@@ -133,7 +133,7 @@ class TugasController extends Controller
             }
 
             if ($task->report_id) {
-                LaporanMasyarakat::where('id', $task->report_id)->update(['status' => 'Selesai']);
+                Report::where('id', $task->report_id)->update(['status' => 'Selesai']);
             }
 
             $task->save();
@@ -146,6 +146,7 @@ class TugasController extends Controller
                 'type' => 'success'
             ];
             
+            /** @var \App\Models\User $admin */
             foreach ($superAdmins as $admin) {
                 $admin->notify(new MaintenanceNotification($notifData));
             }

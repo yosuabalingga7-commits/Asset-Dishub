@@ -11,14 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('laporan_masyarakats', function (Blueprint $table) {
-            // Menambahkan kolom relasi ke tabel assets
-            // Kita taruh setelah kolom 'id' agar rapi
+        Schema::table('reports', function (Blueprint $table) {
             $table->foreignId('asset_id')
                   ->nullable()
                   ->after('id')
                   ->constrained('assets')
-                  ->onDelete('set null'); // Jika aset dihapus, kolom ini jadi NULL, laporan tetap ada
+                  ->onDelete('set null');
         });
     }
 
@@ -27,8 +25,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('laporan_masyarakats', function (Blueprint $table) {
-            // Hapus foreign key terlebih dahulu sebelum menghapus kolom
+        Schema::table('reports', function (Blueprint $table) {
             $table->dropForeign(['asset_id']);
             $table->dropColumn('asset_id');
         });

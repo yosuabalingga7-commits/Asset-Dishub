@@ -4,8 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\LaporanMasyarakat as Pengaduan; 
-use App\Models\LaporanPetugas;
+use App\Models\Report as Pengaduan; 
 use App\Models\Asset;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -60,6 +59,8 @@ class PengaduanController extends Controller
                 $data['status'] = 'masuk';
             }
             
+            $data['source'] = 'masyarakat';
+
             // Simpan ke database
             $pengaduan = Pengaduan::create($data);
             
@@ -71,9 +72,6 @@ class PengaduanController extends Controller
             $aset = Asset::where('id_asset', $idAset)->first();
             
             if ($aset) {
-                // Tentukan status baru berdasarkan kategori kondisi
-                // Jika kondisi = 'hilang' atau 'lainnya' -> status menjadi 'Kritis'
-                // Jika kondisi = 'rusak' atau 'pindah' -> status menjadi 'Rusak'
                 if (in_array($kondisi, ['hilang', 'lainnya'])) {
                     $statusBaru = 'Kritis';
                 } elseif (in_array($kondisi, ['rusak', 'pindah'])) {
@@ -87,7 +85,6 @@ class PengaduanController extends Controller
                     'status' => $statusBaru
                 ]);
                 
-                // Optional: Simpan log perubahan status (jika ada fitur log)
                 \Log::info('Status aset diperbarui', [
                     'id_asset' => $idAset,
                     'kondisi_laporan' => $kondisi,
@@ -95,7 +92,6 @@ class PengaduanController extends Controller
                     'id_pengaduan' => $pengaduan->id
                 ]);
             } else {
-                // Aset tidak ditemukan (seharusnya sudah tervalidasi oleh exists rule)
                 \Log::warning('Aset tidak ditemukan saat update status', [
                     'id_asset' => $idAset,
                     'id_pengaduan' => $pengaduan->id
@@ -116,14 +112,14 @@ class PengaduanController extends Controller
      */
     public function index(Request $request)
     {
-        // Ambil data laporan masyarakat (semua data, karena ini tabel khusus masyarakat)
-        $laporanMasyarakat = Pengaduan::orderBy('created_at', 'desc')->paginate(10);
+        // Ambil data laporan masyarakat (filter by source 'masyarakat')
+        $laporanMasyarakat = Pengaduan::where('source', 'masyarakat')->orderBy('created_at', 'desc')->paginate(10);
         
-        // Ambil data laporan petugas
-        $laporanPetugas = LaporanPetugas::orderBy('created_at', 'desc')->paginate(10);
+        // Ambil data laporan petugas (filter by source 'petugas')
+        $laporanPetugas = Pengaduan::where('source', 'petugas')->orderBy('created_at', 'desc')->paginate(10);
         
-        // Untuk statistik cards (semua data laporan masyarakat)
-        $allDataMasyarakat = Pengaduan::all();
+        // Untuk statistik cards
+        $allDataMasyarakat = Pengaduan::where('source', 'masyarakat')->get();
 
         return view('admin.pengaduan.index', compact('laporanMasyarakat', 'laporanPetugas', 'allDataMasyarakat'));
     }
@@ -133,8 +129,8 @@ class PengaduanController extends Controller
      */
     public function indexPetugas(Request $request)
     {
-        // Ambil data laporan petugas
-        $laporanPetugas = LaporanPetugas::orderBy('created_at', 'desc')->paginate(10);
+        // Ambil data laporan petugas (filter by source 'petugas')
+        $laporanPetugas = Pengaduan::where('source', 'petugas')->orderBy('created_at', 'desc')->paginate(10);
         
         return view('admin.pengaduan.petugas', compact('laporanPetugas'));
     }
@@ -142,7 +138,6 @@ class PengaduanController extends Controller
     public function show($id)
     {
         // UPDATE: Tambahkan eager loading 'tiket' untuk mengecek apakah tiket sudah dibuat
-        // Pastikan di Model LaporanMasyarakat ada: public function tiket() { return $this->hasOne(Maintenance::class, 'report_id'); }
         $laporan = Pengaduan::with(['tiket'])->find($id);
 
         if (!$laporan) {
@@ -284,7 +279,7 @@ class PengaduanController extends Controller
      */
     public function getRecentReports()
     {
-        $laporanMasyarakat = Pengaduan::latest()->take(10)->get()->map(function($item) {
+        $laporanMasyarakat = Pengaduan::where('source', 'masyarakat')->latest()->take(10)->get()->map(function($item) {
             return [
                 'id' => $item->id,
                 'judul_laporan' => $item->judul_laporan,
@@ -295,7 +290,7 @@ class PengaduanController extends Controller
             ];
         });
         
-        $laporanPetugas = LaporanPetugas::latest()->take(10)->get()->map(function($item) {
+        $laporanPetugas = Pengaduan::where('source', 'petugas')->latest()->take(10)->get()->map(function($item) {
             return [
                 'id' => $item->id,
                 'judul_laporan' => $item->judul_laporan,
@@ -318,8 +313,8 @@ class PengaduanController extends Controller
      */
     public function getLaporanDetails()
     {
-        $laporanMasyarakat = Pengaduan::count();
-        $laporanPetugas = LaporanPetugas::count();
+        $laporanMasyarakat = Pengaduan::where('source', 'masyarakat')->count();
+        $laporanPetugas = Pengaduan::where('source', 'petugas')->count();
         
         return response()->json([
             'laporan_masyarakat' => $laporanMasyarakat,
@@ -339,8 +334,8 @@ class PengaduanController extends Controller
             $date = now()->subDays($i);
             $labels[] = $date->locale('id')->isoFormat('dddd');
             
-            $count = Pengaduan::whereDate('created_at', $date->toDateString())->count();
-            $count += LaporanPetugas::whereDate('created_at', $date->toDateString())->count();
+            $count = Pengaduan::where('source', 'masyarakat')->whereDate('created_at', $date->toDateString())->count();
+            $count += Pengaduan::where('source', 'petugas')->whereDate('created_at', $date->toDateString())->count();
             $counts[] = $count;
         }
         

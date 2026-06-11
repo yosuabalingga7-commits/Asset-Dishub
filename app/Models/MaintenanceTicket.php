@@ -74,7 +74,7 @@ class MaintenanceTicket extends Model
      */
     public function report()
     {
-        return $this->belongsTo(LaporanMasyarakat::class, 'report_id');
+        return $this->belongsTo(Report::class, 'report_id');
     }
 
     /**

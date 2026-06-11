@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\Asset;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -13,14 +12,13 @@ class AssetSeeder extends Seeder
     {
         // Supaya tidak error saat mengosongkan tabel yang punya relasi
         Schema::disableForeignKeyConstraints();
-        Asset::truncate();
+        DB::table('assets')->truncate();
         Schema::enableForeignKeyConstraints();
 
         $assets = [
             [
                 'id_asset' => 'AST-PJU001',
                 'nama' => 'PJU LED Philips 120W - Padalarang',
-                // DISAMAKAN: Harus persis dengan nama di CategorySeeder
                 'kategori' => 'Penerangan Jalan Umum (PJU) (5)',
                 'jenis' => 'Lampu PJU LED',
                 'merk' => 'Philips',
@@ -91,7 +89,14 @@ class AssetSeeder extends Seeder
         ];
 
         foreach ($assets as $asset) {
-            Asset::create($asset);
+            $lat = $asset['lat'];
+            $lng = $asset['lng'];
+            unset($asset['lat']);
+            unset($asset['lng']);
+            
+            $asset['coordinates'] = DB::raw("ST_GeomFromText('POINT($lng $lat)', 4326)");
+            
+            DB::table('assets')->insert($asset);
         }
 
         $this->command->info('Data Aset Dishub KBB Berhasil Ditanam!');

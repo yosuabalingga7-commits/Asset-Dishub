@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\MaintenanceTicket; 
 use App\Models\User;
 use App\Models\Asset;
-use App\Models\LaporanMasyarakat;
+use App\Models\Report;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -122,7 +122,7 @@ class PenugasanController extends Controller
                     Asset::where('id', $ticket->asset_id)->update(['status' => 'Baik']);
                 }
                 if ($ticket->report_id) {
-                    LaporanMasyarakat::where('id', $ticket->report_id)->update(['status' => 'Selesai']);
+                    Report::where('id', $ticket->report_id)->update(['status' => 'Selesai']);
                 }
             }
 
