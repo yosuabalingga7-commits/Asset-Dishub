@@ -4,13 +4,13 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use App\Models\Asset;
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\ManajemenController; 
+use App\Http\Controllers\ManajemenController;
 use App\Http\Controllers\LaporanController;
-use App\Http\Controllers\MaintenanceController; 
-use App\Http\Controllers\PengaduanController; 
-use App\Http\Controllers\ActivityController; 
+use App\Http\Controllers\MaintenanceController;
+use App\Http\Controllers\PengaduanController;
+use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\PenugasanController;
-use App\Http\Controllers\AssetController; 
+use App\Http\Controllers\AssetController;
 use App\Http\Controllers\AsetApiController;
 use App\Http\Controllers\LaporanPetugasController;
 use App\Http\Controllers\ProfileController;
@@ -43,21 +43,27 @@ Route::post('/lapor/store', [LaporanController::class, 'store'])->name('lapor.st
 
 // --- API & MAP VIEW ---
 Route::get('/map-view', [DashboardController::class, 'index'])->name('dashboard');
+
+/**
+ * API UTAMA SPASIAL (PostGIS Integrated)
+ * Mendukung pemfilteran dinamis berbasis batas wilayah pandang (Bounding Box/BBOX)
+ * Parameter opsional (via Query String): minLat, minLng, maxLat, maxLng, zoom
+ */
 Route::get('/api/asets-map', [AsetApiController::class, 'getAllAssets'])->name('api.asets.map');
 
 // --- API untuk mendapatkan nomor urut aset berikutnya (digunakan oleh AJAX di form create aset) ---
 Route::get('/api/next-asset-number', function (Request $request) {
     $prefix = $request->query('prefix');
-    
+
     if (!$prefix) {
         return response()->json(['nextNumber' => '001']);
     }
-    
+
     // Cari aset dengan ID terbesar yang memiliki prefix yang sama
     $lastAsset = Asset::where('id_asset', 'LIKE', $prefix . '%')
         ->orderBy('id_asset', 'desc')
         ->first();
-    
+
     if ($lastAsset) {
         // Ambil 3 digit terakhir dari ID, ubah ke integer, lalu +1
         $lastNumber = (int) substr($lastAsset->id_asset, -3);
@@ -65,7 +71,7 @@ Route::get('/api/next-asset-number', function (Request $request) {
     } else {
         $nextNumber = '001';
     }
-    
+
     return response()->json(['nextNumber' => $nextNumber]);
 })->name('api.next.asset.number');
 
@@ -88,7 +94,7 @@ Route::get('/api/report-trend', [PengaduanController::class, 'getReportTrend'])-
 Route::middleware(['auth'])->group(function () {
 
     // Redireksi Dinamis untuk URL /dashboard umum
-    Route::get('/dashboard', function() {
+    Route::get('/dashboard', function () {
         if (Auth::user()->role === 'kadis') return redirect()->route('kadis.dashboard');
         if (Auth::user()->role === 'seksi') return redirect()->route('petugas.tersedia');
         if (Auth::user()->role === 'petugas_lapangan') return redirect()->route('petugas.lapangan.dashboard');
@@ -96,10 +102,18 @@ Route::middleware(['auth'])->group(function () {
     });
 
     // --- SISTEM NOTIFIKASI (Global untuk semua user login) ---
+    // Diperbaiki menggunakan deklarasi anotasi PHPDoc untuk mengeliminasi peringatan Intelephense
     Route::get('/notifications/{id}/read', function ($id) {
-        $notification = Auth::user()->notifications()->findOrFail($id);
-        $notification->markAsRead();
-        return redirect($notification->data['url'] ?? route('dashboard'));
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+        if ($user) {
+            $notification = $user->notifications()->findOrFail($id);
+            $notification->markAsRead();
+            return redirect($notification->data['url'] ?? route('dashboard'));
+        }
+
+        return redirect()->route('login');
     })->name('notifications.read');
 
     // Route untuk Pengaturan Profil (Bisa diakses Admin & Petugas)
@@ -116,22 +130,22 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware('role:admin,kadis')->group(function () {
         // GIS Monitoring
         Route::get('/admin/gis', [ManajemenController::class, 'gis'])->name('gis.index');
-        
+
         // List Aset & Export
         Route::get('/admin/assets/list', [AssetController::class, 'list'])->name('assets.list');
         Route::get('/admin/assets/export-excel', [AssetController::class, 'exportExcel'])->name('assets.export');
         Route::get('/admin/assets/export-pdf', [AssetController::class, 'exportPdf'])->name('assets.pdf');
         Route::get('/admin/assets/{id}', [AssetController::class, 'show'])
-    ->whereNumber('id')
-    ->name('assets.show');                                                                                                                                              
+            ->whereNumber('id')
+            ->name('assets.show');
     });
 
     // --- AREA KHUSUS SUPER ADMIN ---
     Route::prefix('admin')->middleware('role:admin')->group(function () {
-        
+
         // Dashboard Admin
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
-        
+
         // Map Settings
         Route::get('/map-settings', [ManajemenController::class, 'mapSettings'])->name('admin.map.settings');
         Route::post('/map-settings/update', [ManajemenController::class, 'updateMapSettings'])->name('admin.map.settings.update');
@@ -174,13 +188,13 @@ Route::middleware(['auth'])->group(function () {
 
         // --- MODUL MAINTENANCE ---
         Route::get('/maintenance', [MaintenanceController::class, 'index'])->name('admin.maintenance');
-        Route::get('/maintenance/list', [MaintenanceController::class, 'index'])->name('admin.maintenance.index'); 
+        Route::get('/maintenance/list', [MaintenanceController::class, 'index'])->name('admin.maintenance.index');
         Route::get('/maintenance/create', [MaintenanceController::class, 'create'])->name('admin.maintenance.create');
         Route::post('/maintenance/store', [MaintenanceController::class, 'store'])->name('admin.maintenance.store');
         Route::get('/maintenance/{id}/edit', [MaintenanceController::class, 'edit'])->name('admin.maintenance.edit');
         Route::put('/maintenance/{id}', [MaintenanceController::class, 'update'])->name('admin.maintenance.update');
         Route::patch('/maintenance/{id}/update-status', [MaintenanceController::class, 'updateStatus'])->name('admin.maintenance.updateStatus');
-        
+
         // --- MODUL LAPORAN PETUGAS & ACTIVITY LOG ---
         Route::get('/laporan-petugas', [LaporanPetugasController::class, 'create'])->name('laporan.petugas.create');
         Route::post('/laporan-petugas', [LaporanPetugasController::class, 'store'])->name('laporan.petugas.store');
@@ -205,7 +219,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/dashboard', [EksekutifController::class, 'index'])->name('kadis.dashboard');
         Route::get('/export-pdf', [EksekutifController::class, 'exportPDF'])->name('eksekutif.export.pdf');
         Route::get('/export-excel', [EksekutifController::class, 'exportExcel'])->name('eksekutif.export.excel');
-        
+
         // ========== ROUTE PENGUMUMAN KEPALA DINAS ==========
         Route::prefix('pengumuman')->name('kadis.pengumuman.')->group(function () {
             Route::get('/', [PengumumanController::class, 'index'])->name('index');
@@ -217,5 +231,4 @@ Route::middleware(['auth'])->group(function () {
             Route::delete('/{id}', [PengumumanController::class, 'destroy'])->name('destroy');
         });
     });
-
 });

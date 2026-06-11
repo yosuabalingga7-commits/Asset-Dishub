@@ -40,7 +40,7 @@ export default function DetailAssetPanel({ assetData, panelId }) {
                     <span className="text-[8px] font-black text-rose-600 bg-rose-50 px-1.5 py-0.5 uppercase tracking-wider leading-none w-fit border border-rose-100">
                         {assetData.kategori}
                     </span>
-                    <h3 className="text-xs font-bold text-slate-800 truncate max-w-[180px] mt-1 leading-none uppercase">
+                    <h3 className="text-xs font-bold text-slate-800 truncate max-w-45 mt-1 leading-none uppercase">
                         {assetData.nama}
                     </h3>
                 </div>
@@ -133,7 +133,7 @@ export default function DetailAssetPanel({ assetData, panelId }) {
                         </div>
                         <div className="p-2.5 flex justify-between">
                             <span className="text-slate-400 font-bold uppercase text-[9px] tracking-wider shrink-0 w-24">Alamat Lokasi:</span>
-                            <span className="text-slate-800 font-medium text-right text-[11px] leading-tight pl-2 break-all max-w-[150px]">{assetData.alamat || '-'}</span>
+                            <span className="text-slate-800 font-medium text-right text-[11px] leading-tight pl-2 break-all max-w-37.5">{assetData.alamat || '-'}</span>
                         </div>
                         <div className="p-2.5 flex justify-between">
                             <span className="text-slate-400 font-bold uppercase text-[9px] tracking-wider shrink-0 w-24">Merk/Model:</span>

@@ -9,28 +9,29 @@ import { create } from 'zustand';
  * Mengelola keadaan antarmuka visual GIS LINTAS KBB.
  * Menerapkan pola "Stacking Drawers" (GFW Paradigm) yang memungkinkan menu 
  * bertumpuk dan bergeser secara mulus di atas kanvas peta.
+ * 
+ * DIOPTIMALKAN (GRASP Low Coupling): Bebas dari penyimpanan instance L.Map
+ * atau layer fisik Leaflet yang bersifat non-serializable & sirkular.
  */
 
 const DEFAULT_CENTER = [-6.8431, 107.4912]; // Titik pusat default Kabupaten Bandung Barat
 const DEFAULT_ZOOM = 11;                    // Skala zoom awal KBB
 
 const useGisUIStore = create((set) => ({
-    // --- STATE DATA ---
+    // --- STATE DATA (Strictly Serializable) ---
     activePanels: [],              // Tumpukan laci aktif [{ id, type, title, data }]
     activeBaseMap: 'dark',         // Default 'dark' (Carto Dark) atau 'satellite'
     mapOpacity: 80,                // Opacity layer spasial (0 - 100)
     activeLayers: ['assets', 'reports'], // Layer peta yang sedang di-render
     selectedAssetId: null,         // ID aset fisik yang sedang dipilih/fokus
     selectedReportId: null,        // ID laporan pengaduan yang sedang dipilih/fokus
-    mapCenter: DEFAULT_CENTER,     // Titik koordinat pusat peta saat ini
+    mapCenter: DEFAULT_CENTER,     // Titik koordinat pusat peta saat ini [lat, lng]
     mapZoom: DEFAULT_ZOOM,         // Tingkat zoom peta saat ini
+    mapBounds: null,               // Batas koordinat aktif BBOX { minLat, minLng, maxLat, maxLng }
 
     // --- ACTIONS: ORCHESTRATOR PANELS (STAKING ENGINE) ---
     /**
      * Membuka laci panel baru secara cerdas (Mutually Exclusive).
-     * @param {string} type - Jenis panel (contoh: 'katalog-aset', 'detil-aset')
-     * @param {string} title - Judul laci panel
-     * @param {any} data - Payload data opsional untuk dikirim ke laci
      */
     openPanel: (type, title, data = null) => set((state) => {
         const isDetailPanel = type === 'detil-aset' || type === 'detil-laporan';
@@ -96,7 +97,7 @@ const useGisUIStore = create((set) => ({
      */
     clearPanels: () => set({ activePanels: [], selectedAssetId: null, selectedReportId: null }),
 
-    // --- ACTIONS: MAP CONTROLS ---
+    // --- ACTIONS: MAP CONTROLS (Strictly Primitive Inputs) ---
     setActiveBaseMap: (baseMapId) => set({ activeBaseMap: baseMapId }),
     setMapOpacity: (opacity) => set({ mapOpacity: opacity }),
 
@@ -114,6 +115,7 @@ const useGisUIStore = create((set) => ({
 
     setMapCenter: (center) => set({ mapCenter: center }),
     setMapZoom: (zoom) => set({ mapZoom: zoom }),
+    setMapBounds: (bounds) => set({ mapBounds: bounds }),
 
     /**
      * Reset seluruh visual antarmuka kembali ke kondisi awal (KBB Default).
@@ -126,7 +128,8 @@ const useGisUIStore = create((set) => ({
         selectedAssetId: null,
         selectedReportId: null,
         mapCenter: DEFAULT_CENTER,
-        mapZoom: DEFAULT_ZOOM
+        mapZoom: DEFAULT_ZOOM,
+        mapBounds: null
     })
 }));
 

@@ -114,7 +114,7 @@ export default function PanelOrchestrator() {
                                 <span className="text-[9px] font-black text-[#2563eb] uppercase tracking-widest leading-none">
                                     {panel.type.replace('-', ' ')}
                                 </span>
-                                <h3 className="text-xs font-bold text-slate-800 truncate max-w-[200px] mt-1 leading-none uppercase">
+                                <h3 className="text-xs font-bold text-slate-800 truncate max-w-50 mt-1 leading-none uppercase">
                                     {panel.title}
                                 </h3>
                             </div>

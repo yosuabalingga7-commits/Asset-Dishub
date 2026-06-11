@@ -1,7 +1,7 @@
 // resources/js/services/spatialService.js
 
 import api from './api';
-// Kita bisa menggunakan axios biasa untuk endpoint non-api jika tidak ada prefix /api
+// Kita menggunakan axios biasa untuk endpoint non-api jika tidak ada prefix /api
 import axios from 'axios';
 
 /**
@@ -16,13 +16,30 @@ import axios from 'axios';
 export const spatialService = {
 
     /**
-     * MENGAMBIL SELURUH DATA ASET (MASTER SPASIAL)
+     * MENGAMBIL DATA ASET (MASTER SPASIAL)
      * Menggunakan endpoint yang sudah disiapkan di AsetApiController.
-     * Mengembalikan koordinat aset beserta meta data.
+     * Mengirimkan koordinat batas wilayah (BBOX) & zoom level jika tersedia 
+     * untuk memicu penanganan spasial dan clustering tingkat server.
+     * 
+     * @param {Object|null} bounds - Batas pandang koordinat { minLat, minLng, maxLat, maxLng }
+     * @param {number|null} zoom - Tingkat zoom peta saat ini
      */
-    fetchAllAssets: async () => {
+    fetchAllAssets: async (bounds = null, zoom = null) => {
         try {
-            return await api.get('/asets-map');
+            const params = {};
+
+            if (bounds) {
+                params.minLat = bounds.minLat;
+                params.minLng = bounds.minLng;
+                params.maxLat = bounds.maxLat;
+                params.maxLng = bounds.maxLng;
+            }
+
+            if (zoom !== null) {
+                params.zoom = zoom;
+            }
+
+            return await api.get('/asets-map', { params });
         } catch (error) {
             console.error('[SpatialService] Gagal memuat data aset:', error);
             throw error;

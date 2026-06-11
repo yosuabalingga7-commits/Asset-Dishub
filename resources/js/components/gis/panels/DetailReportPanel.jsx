@@ -67,7 +67,7 @@ export default function DetailReportPanel({ reportData, panelId }) {
                     <span className="text-[8px] font-black text-rose-600 bg-rose-50 px-1.5 py-0.5 uppercase tracking-wider leading-none w-fit border border-rose-100">
                         TIKET: #{reportData.ticket_number}
                     </span>
-                    <h3 className="text-xs font-bold text-slate-800 truncate max-w-[180px] mt-1 leading-none uppercase">
+                    <h3 className="text-xs font-bold text-slate-800 truncate max-w-45 mt-1 leading-none uppercase">
                         {reportData.judul_laporan}
                     </h3>
                 </div>
@@ -178,7 +178,7 @@ export default function DetailReportPanel({ reportData, panelId }) {
 
                     <div className="border border-slate-200 bg-white p-2.5 rounded-none flex items-start gap-2">
                         <MapPin size={12} className="text-rose-600 shrink-0 mt-0.5" />
-                        <p className="text-[10.5px] font-semibold text-slate-600 leading-snug break-words">
+                        <p className="text-[10.5px] font-semibold text-slate-600 leading-snug wrap-break-word">
                             {reportData.alamat || 'Alamat tidak diinput secara spesifik.'}
                         </p>
                     </div>

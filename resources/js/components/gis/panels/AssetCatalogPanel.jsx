@@ -1,7 +1,7 @@
 // resources/js/components/gis/panels/AssetCatalogPanel.jsx
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { Search, ChevronDown, FolderGit, MapPin, AlertCircle, HelpCircle } from 'lucide-react';
+import { Search, ChevronDown, FolderGit } from 'lucide-react';
 
 // Store Zustand (UI dan Domain Data)
 import useGisUIStore from '../../../store/useGisUIStore';
@@ -13,6 +13,10 @@ import useLitasStore from '../../../store/useLitasStore';
  * ============================================================================
  * Menyediakan antarmuka pencarian dan penelusuran aset terstruktur.
  * Mengelompokkan aset secara dinamis ke dalam rumpun kategori Dishub KBB.
+ * 
+ * DIOPTIMALKAN (GRASP Indirection): Komponen ini berinteraksi dengan peta Leaflet
+ * secara longgar (*loosely coupled*) melalui sinyal Custom Event, menjaga 
+ * siklus render React tetap bersih dan bebas dari dependensi instansi peta fisik.
  */
 
 // Konfigurasi visual statis untuk Rumpun Kategori Utama Dishub KBB (Information Expert)
@@ -31,9 +35,10 @@ export default function AssetCatalogPanel() {
     const [searchQuery, setSearchQuery] = useState('');
     const [expandedCategory, setExpandedCategory] = useState(null);
 
-    // Auto-hydrate data jika kosong saat laci dibuka
+    // Auto-hydrate data secara global jika penyimpanan lokal masih kosong saat laci dibuka
     useEffect(() => {
         if (assets.length === 0 && !isAssetsLoading) {
+            // Memanggil fetchAssets tanpa argumen memicu pemuatan global untuk kebutuhan pencarian katalog
             fetchAssets();
         }
     }, [assets.length, isAssetsLoading, fetchAssets]);
@@ -43,7 +48,10 @@ export default function AssetCatalogPanel() {
         const groups = {};
         const query = searchQuery.toLowerCase().trim();
 
-        assets.forEach(asset => {
+        // Saring elemen klaster spasial tingkat DB agar tidak tampil di katalog pencarian teks
+        const individualAssets = assets.filter(item => !item.is_cluster);
+
+        individualAssets.forEach(asset => {
             // Logika pencarian fuzzy (Nama, ID Aset, Alamat, atau Jenis Spesifik)
             const matchesQuery = !query ||
                 asset.nama.toLowerCase().includes(query) ||
@@ -61,7 +69,7 @@ export default function AssetCatalogPanel() {
         return groups;
     }, [assets, searchQuery]);
 
-    // Set akordion pertama terbuka otomatis jika hasil pencarian diketik
+    // Set akordion pertama terbuka otomatis jika hasil pencarian diketik oleh pengguna
     useEffect(() => {
         if (searchQuery.trim() !== '') {
             const firstGroupKey = Object.keys(groupedAndFilteredAssets)[0];
@@ -70,18 +78,26 @@ export default function AssetCatalogPanel() {
     }, [searchQuery, groupedAndFilteredAssets]);
 
     const handleAssetClick = (asset) => {
-        // 1. Terbang ke kordinat aset
+        const latVal = parseFloat(asset.lat);
+        const lngVal = parseFloat(asset.lng);
+
+        if (isNaN(latVal) || isNaN(lngVal)) {
+            console.warn('[AssetCatalogPanel] Koordinat aset tidak valid:', asset);
+            return;
+        }
+
+        // 1. Menerbangkan kamera peta menggunakan pesan sinyal terisolasi (GRASP Indirection)
         window.dispatchEvent(new CustomEvent('map-fly-to-coords', {
-            detail: { lat: parseFloat(asset.lat), lng: parseFloat(asset.lng), zoom: 16 }
+            detail: { lat: latVal, lng: lngVal, zoom: 16 }
         }));
 
-        // 2. Tandai ID fokus di Store
+        // 2. Tandai ID aset terpilih di dalam penyimpanan keadaan visual
         setSelectedAssetId(asset.id);
 
-        // 3. Potong tumpukan laci melayang sebelah kanan
+        // 3. Bersihkan tumpukan laci melayang sebelah kanan
         closePanelsToTheRight(-1);
 
-        // 4. Buka laci detail spesifik aset
+        // 4. Tampilkan panel rincian spesifik aset
         openPanel('detil-aset', `Detail Aset: ${asset.id_asset}`, asset);
     };
 

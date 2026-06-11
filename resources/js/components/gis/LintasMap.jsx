@@ -117,7 +117,7 @@ export default function LintasMap() {
             case 'satellite':
                 return 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}';
             case 'street':
-                return 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+                return 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}{r}.png';
             case 'dark':
             default:
                 return 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
@@ -136,9 +136,9 @@ export default function LintasMap() {
         <div className="w-full h-full relative z-0 overflow-hidden bg-[#0A192F]">
 
             {isGeoLoading && (
-                <div className="absolute inset-0 bg-[#0A192F]/80 flex items-center justify-center z-[999]">
+                <div className="absolute inset-0 bg-[#0A192F]/80 flex items-center justify-center z-999">
                     <div className="text-center space-y-4">
-                        <div className="w-10 h-10 border-4 border-[#00e5ff] border-t-transparent rounded-full animate-spin mx-auto shadow-[0_0_15px_rgba(0,229,255,0.4)]"></div>
+                        <div class="w-10 h-10 border-4 border-[#00e5ff] border-t-transparent rounded-full animate-spin mx-auto shadow-[0_0_15px_rgba(0,229,255,0.4)]"></div>
                         <p className="text-[10px] text-[#00e5ff] font-black uppercase tracking-[0.2em] animate-pulse">Menyiapkan Batas Spasial KBB...</p>
                     </div>
                 </div>

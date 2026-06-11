@@ -13,8 +13,8 @@ import useLitasStore from '../../store/useLitasStore';
  * ReportMarkers (Pulsing Radar Layer - OPTIMIZED)
  * ============================================================================
  * Menyadap dan merender seluruh laporan pengaduan masuk yang butuh verifikasi.
- * DIOPTIMALKAN: Menghilangkan useEffect auto-fetcher untuk menghindari loop hidrasi
- * saat database kosong. Hidrasi didelegasikan terpusat di gis-app.jsx.
+ * DIOPTIMALKAN (GRASP Low Coupling): Bebas dari useEffect penarik data.
+ * Merender titik pengaduan secara real-time berdasarkan subset data terpilih.
  */
 
 const createRadarIcon = (source) => {
@@ -53,7 +53,10 @@ export default function ReportMarkers() {
                 lat: latVal,
                 lng: lngVal
             };
-        }).filter(Boolean).filter(r => r.status.toLowerCase() !== 'selesai' && r.status.toLowerCase() !== 'ditolak');
+        }).filter(Boolean).filter(r => {
+            const statusStr = r.status ? r.status.toLowerCase() : 'masuk';
+            return statusStr !== 'selesai' && statusStr !== 'ditolak' && statusStr !== 'baik';
+        });
     }, [recentReports]);
 
     const handleReportClick = (report, e) => {
@@ -76,7 +79,7 @@ export default function ReportMarkers() {
                     }}
                 >
                     <Tooltip direction="top" offset={[0, -10]} opacity={0.95}>
-                        <div className="font-sans text-xs text-slate-800 p-1 space-y-1 text-left min-w-[150px]">
+                        <div className="font-sans text-xs text-slate-800 p-1 space-y-1 text-left min-w-37.5">
                             <div className="flex justify-between items-center gap-2 border-b border-slate-100 pb-1">
                                 <span className="text-[8px] font-black text-rose-600 bg-rose-50 px-1.5 py-0.5 uppercase tracking-wider leading-none">
                                     Aduan {report.source}
