@@ -14,7 +14,8 @@ import { spatialService } from '../services/spatialService';
 
 const useLitasStore = create((set, get) => ({
     // --- STATE DATA ---
-    assets: [],                    // Seluruh data master aset fisik teraktif
+    catalogAssets: [],             // Seluruh data master aset fisik teraktif (untuk sidebar)
+    mapAssets: [],                 // Subset data aset terfilter viewport (untuk marker peta)
     recentReports: [],             // Laporan masyarakat & petugas terbaru
     priorityAssets: [],            // Daftar aset rusak kritis (prioritas tindak lanjut)
     reportStats: null,             // Statistik dashboard (Masyarakat vs Petugas)
@@ -43,7 +44,7 @@ const useLitasStore = create((set, get) => ({
             set({ isAssetsLoading: true });
             try {
                 const data = await spatialService.fetchAllAssets();
-                set({ assets: data || [], isAssetsLoading: false });
+                set({ catalogAssets: data || [], isAssetsLoading: false });
             } catch (error) {
                 set({ isAssetsLoading: false });
                 console.error('[LitasStore] Gagal meng-hydrate data aset:', error);
@@ -63,7 +64,7 @@ const useLitasStore = create((set, get) => ({
 
         // HIT CACHE: Muat data dari memori browser lokal
         if (state.viewportCache[cacheKey]) {
-            set({ assets: state.viewportCache[cacheKey] });
+            set({ mapAssets: state.viewportCache[cacheKey] });
             return;
         }
 
@@ -72,7 +73,7 @@ const useLitasStore = create((set, get) => ({
         try {
             const data = await spatialService.fetchAllAssets(bounds, zoom);
             set((state) => ({
-                assets: data || [],
+                mapAssets: data || [],
                 isAssetsLoading: false,
                 viewportCache: {
                     ...state.viewportCache,
@@ -182,7 +183,8 @@ const useLitasStore = create((set, get) => ({
     clearLitasCache: () => set({
         nearestCache: {},
         viewportCache: {},
-        nearestAssets: []
+        nearestAssets: [],
+        mapAssets: []
     })
 }));
 

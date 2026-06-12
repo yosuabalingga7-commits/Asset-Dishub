@@ -46,8 +46,18 @@ const createClusterIcon = (cluster) => {
 
 const createClusterIconFromCount = (count) => {
     let sizeClass = 'w-9 h-9 text-xs';
-    if (count >= 10 && count < 50) sizeClass = 'w-11 h-11 text-sm';
-    if (count >= 50) sizeClass = 'w-14 h-14 text-base';
+    let iconSize = [36, 36];
+    let iconAnchor = [18, 18];
+
+    if (count >= 10 && count < 50) {
+        sizeClass = 'w-11 h-11 text-sm';
+        iconSize = [44, 44];
+        iconAnchor = [22, 22];
+    } else if (count >= 50) {
+        sizeClass = 'w-14 h-14 text-base';
+        iconSize = [56, 56];
+        iconAnchor = [28, 28];
+    }
 
     return L.divIcon({
         className: 'custom-cluster-icon bg-transparent border-none',
@@ -56,18 +66,18 @@ const createClusterIconFromCount = (count) => {
                 ${count}
             </div>
         `,
-        iconSize: [56, 56],
-        iconAnchor: [28, 28]
+        iconSize: iconSize,
+        iconAnchor: iconAnchor
     });
 };
 
 export default function AssetMarkers() {
-    const assets = useLitasStore((state) => state.assets);
+    const mapAssets = useLitasStore((state) => state.mapAssets);
     const { openPanel, closePanelsToTheRight, setSelectedAssetId, selectedAssetId } = useGisUIStore();
 
     // Memastikan koordinat aman dalam format float desimal sebelum dilempar ke Leaflet
     const sanitizedAssets = useMemo(() => {
-        return assets.map(asset => {
+        return mapAssets.map(asset => {
             const latVal = parseFloat(asset.lat);
             const lngVal = parseFloat(asset.lng);
 
@@ -79,7 +89,7 @@ export default function AssetMarkers() {
                 lng: lngVal
             };
         }).filter(Boolean);
-    }, [assets]);
+    }, [mapAssets]);
 
     const handleMarkerClick = (asset, e) => {
         e.originalEvent.stopPropagation();
@@ -144,7 +154,7 @@ export default function AssetMarkers() {
 
                     return (
                         <Marker
-                            key={`asset-${asset.id}`}
+                            key={`${asset.id_asset}-${asset.id}`}
                             position={[asset.lat, asset.lng]}
                             icon={createAssetIcon(asset.status, iconMarker)}
                             eventHandlers={{

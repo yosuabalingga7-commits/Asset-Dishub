@@ -118,7 +118,7 @@ export default function LayerControlPanel() {
                 <div className="flex items-center justify-between px-4 py-2.5 bg-slate-50 border-b border-slate-200 text-slate-500">
                     <div className="flex items-center gap-2">
                         <Sliders size={13} className="text-[#2563eb]" />
-                        <h4 className="text-[10px] font-black uppercase tracking-widest">Transparansi</h4>
+                        <h4 className="text-[10px] font-black uppercase tracking-widest">Transparansi Masking Luar</h4>
                     </div>
                     <span className="text-[9px] font-black text-[#2563eb] font-mono bg-[#2563eb]/5 px-2 py-0.5 border border-[#2563eb]/20">
                         {mapOpacity}%

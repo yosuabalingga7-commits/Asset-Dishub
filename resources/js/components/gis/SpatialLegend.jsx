@@ -39,7 +39,7 @@ export default function SpatialLegend() {
     if (!hasAssetsActive && !hasReportsActive) return null;
 
     return (
-        <div className="pointer-events-auto bg-white/95 backdrop-blur-sm border border-slate-350 shadow-2xl rounded-none w-52 animate-in fade-in slide-in-from-bottom-4 flex flex-col font-sans select-none text-slate-800">
+        <div className="pointer-events-auto bg-white/90 backdrop-blur-md border border-slate-200/80 shadow-lg rounded-none w-52 animate-in fade-in slide-in-from-bottom-4 flex flex-col font-sans select-none text-slate-800">
 
             {/* Header Legenda */}
             <div className="flex items-center gap-1.5 px-3 py-2 bg-slate-50 border-b border-slate-200 text-left">

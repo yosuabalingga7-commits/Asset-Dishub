@@ -101,6 +101,11 @@ class Report extends Model
             return null;
         }
 
+        // FALLBACK: Cek apakah data mentah adalah teks WKT langsung (e.g., 'POINT(107.5 -6.8)')
+        if (is_string($wkb) && preg_match('/POINT\s*\(\s*([-\d.]+)\s+([-\d.]+)\s*\)/i', $wkb, $matches)) {
+            return ['lat' => (float)$matches[2], 'lng' => (float)$matches[1]];
+        }
+
         if (!ctype_xdigit($wkb)) {
             $wkb = bin2hex($wkb);
         }

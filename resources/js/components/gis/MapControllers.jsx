@@ -101,10 +101,7 @@ export default function MapControllers() {
         const handleFlyToCoords = (e) => {
             const { lat, lng, zoom } = e.detail;
             if (lat && lng) {
-                map.flyTo([lat, lng], zoom || 16, {
-                    animate: true,
-                    duration: 1.5 // Efek sinematik meluncur 1.5 detik
-                });
+                map.setView([lat, lng], zoom || 16, { animate: false });
             }
         };
 

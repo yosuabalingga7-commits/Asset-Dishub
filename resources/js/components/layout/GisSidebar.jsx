@@ -52,7 +52,7 @@ export default function GisSidebar() {
     };
 
     return (
-        <aside className="w-16 h-full flex flex-col items-center bg-[#1E293B] border-r border-white/10 text-white select-none shrink-0 z-40">
+        <aside className="w-16 h-full flex flex-col items-center bg-white border-r border-slate-200/80 text-slate-800 select-none shrink-0 z-40">
 
             {/* Rumpun Menu Atas */}
             <div className="flex-1 flex flex-col items-center w-full">
@@ -65,8 +65,8 @@ export default function GisSidebar() {
                                 onClick={() => handleNavClick(item)}
                                 className={`w-full h-16 flex flex-col items-center justify-center gap-1 transition-all relative active:bg-white/5 rounded-none outline-none border-l-[3px]
                                     ${isActive
-                                        ? 'bg-white/5 text-[#00e5ff] border-[#00e5ff]'
-                                        : 'text-slate-400 hover:text-white hover:bg-white/5 border-transparent'
+                                        ? 'bg-blue-50 text-[#2563eb] border-[#2563eb]'
+                                        : 'text-slate-400 hover:text-slate-800 hover:bg-slate-50 border-transparent'
                                     }`}
                             >
                                 <item.icon size={18} strokeWidth={isActive ? 2.5 : 2} />
@@ -76,9 +76,9 @@ export default function GisSidebar() {
                             </button>
 
                             {/* Tooltip Label (Desktop Hover) */}
-                            <div className="hidden md:block absolute top-1/2 left-full -translate-y-1/2 ml-2 px-3 py-2 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-none opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-xl border border-white/10">
+                            <div className="hidden md:block absolute top-1/2 left-full -translate-y-1/2 ml-2 px-3 py-2 bg-white text-slate-800 text-[10px] font-black uppercase tracking-widest rounded-none opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-xl border border-slate-200/80">
                                 {item.title}
-                                <div className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-2 bg-slate-900 rotate-45 border-b border-l border-white/10 rounded-none" />
+                                <div className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-2 bg-white rotate-45 border-b border-l border-slate-200/80 rounded-none" />
                             </div>
                         </div>
                     );
@@ -87,7 +87,7 @@ export default function GisSidebar() {
 
             {/* Rumpun Menu Bawah (Info / Tentang) */}
             <div className="flex flex-col items-center w-full mt-auto">
-                <div className="w-8 h-px bg-white/10 mb-2"></div>
+                <div className="w-8 h-px bg-slate-200/80 mb-2"></div>
 
                 <div className="relative group w-full flex justify-center">
                     <button
@@ -97,17 +97,17 @@ export default function GisSidebar() {
                         }}
                         className={`w-full h-16 flex items-center justify-center transition-all relative active:bg-white/5 rounded-none border-l-[3px]
                             ${isPanelActive('tentang')
-                                ? 'bg-white/5 text-[#00e5ff] border-[#00e5ff]'
-                                : 'text-slate-400 hover:text-white hover:bg-white/5 border-transparent'
+                                ? 'bg-blue-50 text-[#2563eb] border-[#2563eb]'
+                                : 'text-slate-400 hover:text-slate-800 hover:bg-slate-50 border-transparent'
                             }`}
                     >
                         <Info size={18} strokeWidth={isPanelActive('tentang') ? 2.5 : 2} />
                     </button>
 
                     {/* Tooltip Tentang */}
-                    <div className="hidden md:block absolute top-1/2 left-full -translate-y-1/2 ml-2 px-3 py-2 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-none opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-xl border border-white/10">
+                    <div className="hidden md:block absolute top-1/2 left-full -translate-y-1/2 ml-2 px-3 py-2 bg-white text-slate-800 text-[10px] font-black uppercase tracking-widest rounded-none opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-xl border border-slate-200/80">
                         Tentang Aplikasi
-                        <div className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-2 bg-slate-900 rotate-45 border-b border-l border-white/10 rounded-none" />
+                        <div className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-2 bg-white rotate-45 border-b border-l border-slate-200/80 rounded-none" />
                     </div>
                 </div>
             </div>

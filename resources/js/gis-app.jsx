@@ -16,7 +16,7 @@ import GisSidebar from './components/layout/GisSidebar';
 import PanelOrchestrator from './components/gis/PanelOrchestrator';
 
 // Layer 4: HUD & Legenda (Heads-Up Display)
-import MapHUD from './components/gis/MapHUD';
+import { CoordinateTracker, ZoomControls } from './components/gis/MapHUD';
 import SpatialLegend from './components/gis/SpatialLegend';
 
 // Store Zustand untuk Hidrasi Data Otomatis saat Bootstrapping
@@ -101,14 +101,19 @@ function GISMainApp() {
                 {/* 
                     LAYER 4: HUD & SPATIAL LEGEND (Z-30)
                     Sumbu mengambang di pojok kanan bawah peta (Z-30).
-                    Gaya bertumpuk flex-col untuk navigasi kustom.
+                    Gaya bertumpuk flex-row untuk 2 kolom simetris.
                 */}
-                <div className="absolute bottom-8 right-8 z-30 pointer-events-none flex flex-col items-end gap-4">
-                    {/* Legenda visual kondisi aset */}
-                    <SpatialLegend />
+                <div className="absolute bottom-8 right-8 z-30 pointer-events-none flex flex-row items-end gap-4">
+                    {/* Kolom 1: Tracker & Legenda */}
+                    <div className="flex flex-col gap-4">
+                        <CoordinateTracker />
+                        <SpatialLegend />
+                    </div>
 
-                    {/* Kontrol zoom taktis Leaflet */}
-                    <MapHUD />
+                    {/* Kolom 2: Zoom Controls */}
+                    <div className="flex flex-col">
+                        <ZoomControls />
+                    </div>
                 </div>
 
             </div>

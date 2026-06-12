@@ -8,6 +8,10 @@ import useGisUIStore from '../../store/useGisUIStore';
 
 // Impor sub-panel (Fase 5)
 import LayerControlPanel from './panels/LayerControlPanel';
+import DetailAssetPanel from './panels/DetailAssetPanel';
+import DetailReportPanel from './panels/DetailReportPanel';
+import AssetCatalogPanel from './panels/AssetCatalogPanel';
+import ReportCatalogPanel from './panels/ReportCatalogPanel';
 
 /**
  * ============================================================================
@@ -31,21 +35,9 @@ export default function PanelOrchestrator() {
             case 'konfigurasi':
                 return <LayerControlPanel />;
             case 'katalog-aset':
-                return (
-                    <div className="p-4 text-xs font-semibold text-slate-500 text-center py-12">
-                        <FolderGit className="mx-auto text-slate-300 mb-3" size={32} />
-                        <p className="uppercase tracking-wider">Katalog Aset</p>
-                        <p className="text-[10px] text-slate-400 font-normal mt-1 leading-normal">Sedang disiapkan untuk integrasi data PostgreSQL...</p>
-                    </div>
-                );
+                return <AssetCatalogPanel />;
             case 'katalog-laporan':
-                return (
-                    <div className="p-4 text-xs font-semibold text-slate-500 text-center py-12">
-                        <AlertTriangle className="mx-auto text-slate-300 mb-3" size={32} />
-                        <p className="uppercase tracking-wider">Katalog Laporan</p>
-                        <p className="text-[10px] text-slate-400 font-normal mt-1 leading-normal">Sedang disiapkan untuk integrasi data PostgreSQL...</p>
-                    </div>
-                );
+                return <ReportCatalogPanel />;
             case 'tentang':
                 return (
                     <div className="p-5 text-left text-slate-600 space-y-4">
@@ -62,21 +54,9 @@ export default function PanelOrchestrator() {
                     </div>
                 );
             case 'detil-aset':
-                return (
-                    <div className="p-4 text-xs font-semibold text-slate-500 text-center py-12">
-                        <FolderGit className="mx-auto text-slate-300 mb-3 animate-pulse" size={32} />
-                        <p className="uppercase tracking-wider">Detail Aset</p>
-                        <p className="text-[10px] text-slate-400 font-normal mt-1 leading-normal">Memuat metadata {panel.data?.id_asset || 'aset'}...</p>
-                    </div>
-                );
+                return <DetailAssetPanel assetData={panel.data} panelId={panel.id} />;
             case 'detil-laporan':
-                return (
-                    <div className="p-4 text-xs font-semibold text-slate-500 text-center py-12">
-                        <AlertTriangle className="mx-auto text-slate-300 mb-3 animate-pulse" size={32} />
-                        <p className="uppercase tracking-wider">Detail Laporan</p>
-                        <p className="text-[10px] text-slate-400 font-normal mt-1 leading-normal">Memuat berkas pengaduan #{panel.data?.ticket_number || 'laporan'}...</p>
-                    </div>
-                );
+                return <DetailReportPanel reportData={panel.data} panelId={panel.id} />;
             default:
                 return <div className="p-4 text-xs">Konten panel tidak dikenal.</div>;
         }

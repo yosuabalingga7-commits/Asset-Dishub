@@ -24,7 +24,7 @@ export default function DetailReportPanel({ reportData, panelId }) {
     // Mengecek apakah ada foto bukti dari storage, jika tidak tampilkan default warning placeholder
     const imagePath = reportData.foto
         ? (reportData.foto.startsWith('http') ? reportData.foto : `/storage/${reportData.foto}`)
-        : '/img/default-asset.png';
+        : '/img/default-halte.png';
 
     // 2. WHATSAPP FORMATTER (Information Expert)
     const waLink = useMemo(() => {
@@ -92,7 +92,8 @@ export default function DetailReportPanel({ reportData, panelId }) {
                         className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
                         draggable={false}
                         onError={(e) => {
-                            e.target.src = '/img/default-asset.png';
+                            e.target.onerror = null;
+                            e.target.src = '/img/default-halte.png';
                         }}
                     />
 

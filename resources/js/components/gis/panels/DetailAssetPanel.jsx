@@ -21,7 +21,7 @@ export default function DetailAssetPanel({ assetData, panelId }) {
     if (!assetData) return null;
 
     // Membaca jalur gambar secara dinamis dari API Resource
-    const imagePath = assetData.foto || '/img/default-asset.png';
+    const imagePath = assetData.foto || '/img/default-halte.png';
 
     const handleCopyCoords = () => {
         const coordsText = `${assetData.lat.toFixed(6)}, ${assetData.lng.toFixed(6)}`;
@@ -64,7 +64,8 @@ export default function DetailAssetPanel({ assetData, panelId }) {
                         className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
                         draggable={false}
                         onError={(e) => {
-                            e.target.src = '/img/default-asset.png';
+                            e.target.onerror = null;
+                            e.target.src = '/img/default-halte.png';
                         }}
                     />
 
