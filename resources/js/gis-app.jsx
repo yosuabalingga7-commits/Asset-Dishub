@@ -15,8 +15,8 @@ import GisSidebar from './components/layout/GisSidebar';
 // Layer 3: Pengendali Laci Bertumpuk (Panel Orchestrator)
 import PanelOrchestrator from './components/gis/PanelOrchestrator';
 
-// Layer 4: HUD & Legenda (Heads-Up Display)
-import MapHUD from './components/gis/MapHUD';
+// Layer 4: HUD & Legenda (Heads-Up Display Decoupled)
+import { CoordinateTracker, ZoomControls } from './components/gis/MapHUD';
 import SpatialLegend from './components/gis/SpatialLegend';
 
 // Store Zustand untuk Hidrasi Data Otomatis saat Bootstrapping
@@ -30,7 +30,6 @@ import useLitasStore from './store/useLitasStore';
  * ekosistem spasial tertutup yang bebas dari interferensi Blade Engine standar.
  * Menjamin tidak ada scrollbar bocor, rendering peta bleed 100% viewport.
  */
-
 function GISMainApp() {
     const fetchAssets = useLitasStore((state) => state.fetchAssets);
     const fetchRecentReports = useLitasStore((state) => state.fetchRecentReports);
@@ -57,7 +56,7 @@ function GISMainApp() {
     }, [fetchAssets, fetchRecentReports, fetchReportStats]);
 
     return (
-        <div className="h-screen w-screen flex flex-col overflow-hidden bg-[#0A192F] text-slate-800 select-none">
+        <div className="h-screen w-screen flex flex-col overflow-hidden bg-slate-50 text-slate-800 select-none">
 
             {/* =================================================================
                 LAYER 1: GLOBAL CONTEXT (h-16, Z-50)
@@ -100,15 +99,21 @@ function GISMainApp() {
 
                 {/* 
                     LAYER 4: HUD & SPATIAL LEGEND (Z-30)
-                    Sumbu mengambang di pojok kanan bawah peta (Z-30).
-                    Gaya bertumpuk flex-col untuk navigasi kustom.
+                    Menerapkan layout 2-Kolom berdampingan secara horizontal di pojok kanan bawah:
+                    - Kolom Kiri: CoordinateTracker (Atas) + SpatialLegend (Bawah) dalam satu tumpukan simetris.
+                    - Kolom Kanan: ZoomControls (Satu baris ramping berisi tombol zoom +, reset, -).
                 */}
-                <div className="absolute bottom-8 right-8 z-30 pointer-events-none flex flex-col items-end gap-4">
-                    {/* Legenda visual kondisi aset */}
-                    <SpatialLegend />
+                <div className="absolute bottom-6 right-6 z-30 pointer-events-none flex flex-row items-end gap-3">
+                    {/* Sub-Kontainer Kiri (Info Pelacak Koordinat & Legenda Penanda) */}
+                    <div className="flex flex-col items-end gap-3 pointer-events-none">
+                        <CoordinateTracker />
+                        <SpatialLegend />
+                    </div>
 
-                    {/* Kontrol zoom taktis Leaflet */}
-                    <MapHUD />
+                    {/* Sub-Kontainer Kanan (Tombol Kontrol Zoom Peta) */}
+                    <div className="pointer-events-none">
+                        <ZoomControls />
+                    </div>
                 </div>
 
             </div>

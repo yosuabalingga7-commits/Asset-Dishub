@@ -13,8 +13,8 @@ import useLitasStore from '../../store/useLitasStore';
  * ReportMarkers (Pulsing Radar Layer - OPTIMIZED)
  * ============================================================================
  * Menyadap dan merender seluruh laporan pengaduan masuk yang butuh verifikasi.
- * DIOPTIMALKAN (GRASP Low Coupling): Bebas dari useEffect penarik data.
- * Merender titik pengaduan secara real-time berdasarkan subset data terpilih.
+ * DIOPTIMALKAN (GRASP Low Coupling): Tidak memiliki silsilah useEffect penarik data.
+ * Memisahkan tanggung jawab penarikan data ke level MapControllers.jsx.
  */
 
 const createRadarIcon = (source) => {
@@ -26,7 +26,9 @@ const createRadarIcon = (source) => {
         className: 'custom-radar-pin bg-transparent border-none',
         html: `
             <div class="relative w-8 h-8 flex items-center justify-center" style="transform: translate(-16px, -16px);">
+                <!-- Denyut gelombang radar menggunakan utility Tailwind v4 -->
                 <span class="absolute inline-flex h-7 w-7 rounded-full ${ringClass} opacity-75 animate-ping"></span>
+                <!-- Inti pin solid -->
                 <span class="relative inline-flex rounded-full h-4 w-4 ${colorClass} border-2 border-white shadow-xl flex items-center justify-center">
                     <span class="w-1.5 h-1.5 rounded-full bg-white"></span>
                 </span>
@@ -39,8 +41,13 @@ const createRadarIcon = (source) => {
 
 export default function ReportMarkers() {
     const recentReports = useLitasStore((state) => state.recentReports);
-    const { openPanel, closePanelsToTheRight, setSelectedReportId } = useGisUIStore();
+    
+    // Gunakan selectors individual untuk mencegah re-render reaktif tak terkendali
+    const openPanel = useGisUIStore((state) => state.openPanel);
+    const closePanelsToTheRight = useGisUIStore((state) => state.closePanelsToTheRight);
+    const setSelectedReportId = useGisUIStore((state) => state.setSelectedReportId);
 
+    // Hanya tampilkan laporan aktif yang statusnya 'masuk' atau 'Proses Perbaikan'
     const activeReports = useMemo(() => {
         return recentReports.map(report => {
             const latVal = parseFloat(report.lat);
@@ -53,17 +60,19 @@ export default function ReportMarkers() {
                 lat: latVal,
                 lng: lngVal
             };
-        }).filter(Boolean).filter(r => {
-            const statusStr = r.status ? r.status.toLowerCase() : 'masuk';
-            return statusStr !== 'selesai' && statusStr !== 'ditolak' && statusStr !== 'baik';
-        });
+        }).filter(Boolean).filter(r => r.status.toLowerCase() !== 'selesai' && r.status.toLowerCase() !== 'ditolak');
     }, [recentReports]);
 
     const handleReportClick = (report, e) => {
         e.originalEvent.stopPropagation();
-        e.target._map.flyTo([report.lat, report.lng], 16, { animate: true });
+
+        // 1. Set ID fokus di Store
         setSelectedReportId(report.id);
+
+        // 2. Potong tumpukan laci
         closePanelsToTheRight(-1);
+
+        // 3. Buka laci detail spesifik untuk laporan pengaduan ini
         openPanel('detil-laporan', `Investigasi: ${report.ticket_number}`, report);
     };
 
@@ -78,8 +87,9 @@ export default function ReportMarkers() {
                         click: (e) => handleReportClick(report, e)
                     }}
                 >
+                    {/* Tooltip Spasial Melayang */}
                     <Tooltip direction="top" offset={[0, -10]} opacity={0.95}>
-                        <div className="font-sans text-xs text-slate-800 p-1 space-y-1 text-left min-w-37.5">
+                        <div className="font-sans text-xs text-slate-800 p-1 space-y-1 text-left min-w-[150px]">
                             <div className="flex justify-between items-center gap-2 border-b border-slate-100 pb-1">
                                 <span className="text-[8px] font-black text-rose-600 bg-rose-50 px-1.5 py-0.5 uppercase tracking-wider leading-none">
                                     Aduan {report.source}

@@ -1,108 +1,167 @@
 import os
+import argparse
+import logging
 from pathlib import Path
+from typing import Set, List
 
-# --- KONFIGURASI ---
-TARGET_DIRECTORY = r"C:\Users\PC\Documents\Dev\LINTAS\Asset-Dishub"
-OUTPUT_FILE = r"C:\Users\PC\Documents\Dev\LINTAS\Asset-Dishub\laravel-hybrid-output-optimized.txt"
+# Konfigurasi Logging yang bersih
+logging.basicConfig(level=logging.INFO, format='%(message)s')
+logger = logging.getLogger(__name__)
 
-# 1. FORBIDDEN DIRS (Blacklist Diperketat)
-# Ditambahkan: public, config, tests, lang, seeders, factories, css, sass
-FORBIDDEN_DIRS = {
-    "vendor", "node_modules", ".git", "storage", "bootstrap", 
-    ".vscode", ".idea", "__pycache__", "img", "shp", "uploads", 
-    "fonts", "coverage", "dist", "build",
-    "public", "config", "tests", "lang", "seeders", "factories", "css", "sass", "assets"
-}
-
-# 2. ALLOWED DIRS (Hanya Core Architecture Domain)
-ALLOWED_DIRS = {
-    "app", "database", "resources", "routes"
-}
-
-# 3. ROOT FILES (Hanya Dependency Definition)
-ALLOWED_ROOT_FILES = {
-    "composer.json", "package.json", ".env.example"
-}
-
-# 4. EXTENSIONS (Dihapus: .sql, .css, .md, .json)
-# Menghapus .sql akan membuang ratusan ribu token tidak berguna.
-INCLUDE_EXTENSIONS = {
-    ".php", ".js", ".jsx", ".ts", ".tsx", ".vue"
-}
-
-# 5. GUARD PATTERN: Batas ukuran file (30 KB)
-# Mencegah file raksasa / auto-generated code termuat.
-MAX_FILE_SIZE_BYTES = 50 * 1024  
-
-def is_binary(file_path: Path) -> bool:
-    try:
-        with open(file_path, 'rb') as f:
-            return b'\x00' in f.read(512)
-    except Exception:
-        return True
-
-def main():
-    target_path = Path(TARGET_DIRECTORY)
-    if not target_path.is_dir():
-        print(f"Error: Folder '{TARGET_DIRECTORY}' tidak ditemukan.")
-        return
-
-    files_to_process = []
-    total_size = 0
+class ExtractorConfig:
+    """Konfigurasi sentral (Information Expert) untuk ekstraksi codebase."""
     
-    print("Menganalisa struktur arsitektur project Laravel (Strict Domain Mode)...")
-    for file_path in target_path.rglob("*"):
-        if not file_path.is_file():
-            continue
+    # Tambahan: 'public', 'vendor', dll.
+    FORBIDDEN_DIRS: Set[str] = {
+        "vendor", "node_modules", ".git", "storage", "bootstrap", 
+        ".vscode", ".idea", "__pycache__", "img", "shp", "uploads", 
+        "fonts", "coverage", "dist", "build", "public", "config", 
+        "tests", "lang", "seeders", "factories", "css", "sass", "assets"
+    }
 
-        parts = file_path.relative_to(target_path).parts
+    ALLOWED_DIRS: Set[str] = {
+        "app", "database", "resources", "routes"
+    }
+
+    # Menambahkan vite.config.js karena penting untuk konteks SPA
+    ALLOWED_ROOT_FILES: Set[str] = {
+        "composer.json", "package.json", ".env.example", "vite.config.js"
+    }
+
+    INCLUDE_EXTENSIONS: Set[str] = {
+        ".php", ".js", ".jsx", ".ts", ".tsx", ".vue"
+    }
+
+    # Ditingkatkan ke 80KB karena file React/Blade seringkali padat logika
+    MAX_FILE_SIZE_BYTES: int = 80 * 1024  
+
+
+class LLMContextOptimizer:
+    """Utility untuk memampatkan teks agar menghemat token LLM (Pure Fabrication)."""
+    
+    @staticmethod
+    def compress_code(content: str) -> str:
+        """Menghapus spasi trailing dan baris kosong ganda untuk hemat token LLM."""
+        lines = content.splitlines()
+        optimized_lines = []
+        previous_empty = False
         
-        # Validasi 1: File Root
-        is_root_file = len(parts) == 1
-        if is_root_file:
-            if file_path.name not in ALLOWED_ROOT_FILES:
-                continue
-        else:
-            # Validasi 2: Cek Blacklist (Jika ada di folder terlarang, skip)
-            if any(part in FORBIDDEN_DIRS for part in parts):
-                continue
+        for line in lines:
+            stripped = line.rstrip()
+            is_empty = len(stripped) == 0
             
-            # Validasi 3: Cek Whitelist (Hanya izinkan folder spesifik)
-            if not any(part in ALLOWED_DIRS for part in parts):
-                continue
-
-        # Validasi 4: Filter Ekstensi
-        if file_path.suffix in INCLUDE_EXTENSIONS or file_path.name in ALLOWED_ROOT_FILES:
-            
-            # Validasi 5: Size Guard & Binary Check
-            try:
-                file_size = file_path.stat().st_size
-                if file_size > MAX_FILE_SIZE_BYTES:
-                    print(f"[SKIPPED] {file_path.name} ukurannya terlalu besar (> 30KB).")
-                    continue
+            if is_empty and previous_empty:
+                continue # Skip consecutive empty lines
                 
-                if not is_binary(file_path):
-                    files_to_process.append(file_path)
-                    total_size += file_size
-            except Exception:
-                pass
+            optimized_lines.append(stripped)
+            previous_empty = is_empty
+            
+        return "\n".join(optimized_lines)
 
-    # Eksekusi penulisan
-    with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
-        f.write("=== STRUKTUR & ISI KODE (STRICT DOMAIN LOGIC) ===\n\n")
-        for file_path in sorted(files_to_process):
-            relative_path = file_path.relative_to(target_path)
-            try:
-                content = file_path.read_text("utf-8", errors="ignore")
-                f.write(f"\n--- FILE: {relative_path} ---\n")
-                f.write(content)
-                f.write("\n")
-                print(f"-> Memuat logika: {relative_path}")
-            except Exception as e:
-                print(f"-> Gagal membaca {relative_path}: {e}")
+    @staticmethod
+    def is_binary(file_path: Path) -> bool:
+        try:
+            with open(file_path, 'rb') as f:
+                return b'\x00' in f.read(512)
+        except Exception:
+            return True
 
-    print(f"\nSelesai! Hasil ekstraksi dioptimasi pada: {OUTPUT_FILE}")
-    print(f"Estimasi Total Ukuran Teks: {total_size / 1024:.2f} KB (Sangat aman untuk LLM Context).")
+
+class CodebaseExtractor:
+    """Controller utama untuk proses ekstraksi (GRASP Controller)."""
+    
+    def __init__(self, target_dir: str, output_file: str):
+        self.target_path = Path(target_dir).resolve()
+        self.output_file = Path(output_file).resolve()
+        self.config = ExtractorConfig()
+        self.optimizer = LLMContextOptimizer()
+
+    def _should_process(self, file_path: Path) -> bool:
+        parts = file_path.relative_to(self.target_path).parts
+        is_root_file = len(parts) == 1
+
+        # 1. Validasi Root Files
+        if is_root_file:
+            return file_path.name in self.config.ALLOWED_ROOT_FILES
+
+        # 2. Validasi Blacklist
+        if any(part in self.config.FORBIDDEN_DIRS for part in parts):
+            return False
+            
+        # 3. Validasi Whitelist
+        if not any(part in self.config.ALLOWED_DIRS for part in parts):
+            return False
+
+        # 4. Validasi Ekstensi
+        return file_path.suffix in self.config.INCLUDE_EXTENSIONS
+
+    def execute(self):
+        if not self.target_path.is_dir():
+            logger.error(f"❌ Error: Folder '{self.target_path}' tidak ditemukan.")
+            return
+
+        files_to_process: List[Path] = []
+        original_size = 0
+        
+        logger.info("🔍 Menganalisa struktur arsitektur project Laravel (Strict Domain Mode)...")
+        
+        for file_path in self.target_path.rglob("*"):
+            if not file_path.is_file():
+                continue
+
+            if self._should_process(file_path):
+                try:
+                    file_size = file_path.stat().st_size
+                    
+                    # Size Guard
+                    if file_size > self.config.MAX_FILE_SIZE_BYTES:
+                        logger.warning(f"[SKIPPED] {file_path.name} terlalu besar (>{self.config.MAX_FILE_SIZE_BYTES/1024:.0f}KB).")
+                        continue
+                    
+                    # Binary Guard
+                    if not self.optimizer.is_binary(file_path):
+                        files_to_process.append(file_path)
+                        original_size += file_size
+                except Exception as e:
+                    logger.error(f"[ERROR] Gagal memvalidasi {file_path.name}: {e}")
+
+        # Tulis ke file output
+        self._write_output(sorted(files_to_process), original_size)
+
+    def _write_output(self, files: List[Path], original_size: int):
+        total_compressed_size = 0
+        
+        with open(self.output_file, "w", encoding="utf-8") as f:
+            f.write("=== STRUKTUR & ISI KODE (OPTIMIZED FOR LLM CONTEXT) ===\n\n")
+            
+            for file_path in files:
+                relative_path = file_path.relative_to(self.target_path)
+                try:
+                    content = file_path.read_text("utf-8", errors="ignore")
+                    compressed_content = self.optimizer.compress_code(content)
+                    
+                    f.write(f"\n--- FILE: {relative_path} ---\n")
+                    f.write(compressed_content)
+                    f.write("\n")
+                    
+                    total_compressed_size += len(compressed_content.encode('utf-8'))
+                    logger.info(f"-> Memuat logika: {relative_path}")
+                except Exception as e:
+                    logger.error(f"-> Gagal membaca {relative_path}: {e}")
+
+        logger.info(f"\n✅ Selesai! Hasil ekstraksi dioptimasi pada:\n   {self.output_file}")
+        logger.info(f"📊 Ukuran Asli: {original_size / 1024:.2f} KB")
+        logger.info(f"🚀 Ukuran Terkompresi (LLM Ready): {total_compressed_size / 1024:.2f} KB")
+        logger.info(f"📉 Penghematan Token: ~{((original_size - total_compressed_size) / original_size) * 100:.1f}%")
 
 if __name__ == "__main__":
-    main()
+    # Menggunakan Argparse agar dinamis (Best Practice)
+    parser = argparse.ArgumentParser(description="LLM Context Extractor for Laravel/React SPA")
+    parser.add_argument("--dir", type=str, default=os.getcwd(), help="Target directory (default: current dir)")
+    parser.add_argument("--out", type=str, default="llm-context-optimized.txt", help="Output file name")
+    
+    args = parser.parse_args()
+    
+    # Eksekusi
+    extractor = CodebaseExtractor(target_dir=args.dir, output_file=args.out)
+    extractor.execute()

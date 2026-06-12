@@ -47,14 +47,42 @@ export default function LintasMap() {
     const initialCenter = useMemo(() => useGisUIStore.getState().mapCenter, []);
     const initialZoom = useMemo(() => useGisUIStore.getState().mapZoom, []);
 
-    // State Lokal untuk GeoJSON Batas Administratif
-    const [geoJsonData, setGeoData] = useState(null);
-    const [isGeoLoading, setGeoLoading] = useState(true);
+    // State Lokal untuk GeoJSON Batas Administratif & Masking
+    const [maskingData, setMaskingData] = useState(null);
+    const [isMaskingLoading, setMaskingLoading] = useState(true);
+    const [villageData, setVillageData] = useState(null);
+    const [isVillageLoading, setVillageLoading] = useState(false);
 
-    // Memuat berkas administrasi desa KBB secara asinkron dari folder public Laravel
+    // Memuat berkas batas kabupaten KBB untuk masking secara asinkron dari folder public Laravel
     useEffect(() => {
         let isMounted = true;
-        setGeoLoading(true);
+        setMaskingLoading(true);
+
+        fetch('/shp/kabupaten_kbb.json')
+            .then((res) => {
+                if (!res.ok) throw new Error('Berkas GeoJSON kabupaten tidak ditemukan.');
+                return res.json();
+            })
+            .then((data) => {
+                if (isMounted) {
+                    setMaskingData(data);
+                    setMaskingLoading(false);
+                }
+            })
+            .catch((err) => {
+                console.error('[LintasMap] Gagal memuat batas kabupaten KBB:', err);
+                if (isMounted) setMaskingLoading(false);
+            });
+
+        return () => { isMounted = false; };
+    }, []);
+
+    // Lazy load berkas administrasi desa KBB secara asinkron ketika layer boundaries diaktifkan
+    useEffect(() => {
+        if (!activeLayers.includes('boundaries') || villageData || isVillageLoading) return;
+
+        let isMounted = true;
+        setVillageLoading(true);
 
         fetch('/shp/administrasi_desa.json')
             .then((res) => {
@@ -63,22 +91,22 @@ export default function LintasMap() {
             })
             .then((data) => {
                 if (isMounted) {
-                    setGeoData(data);
-                    setGeoLoading(false);
+                    setVillageData(data);
+                    setVillageLoading(false);
                 }
             })
             .catch((err) => {
-                console.error('[LintasMap] Gagal memuat batas administrasi KBB:', err);
-                if (isMounted) setGeoLoading(false);
+                console.error('[LintasMap] Gagal memuat batas desa KBB:', err);
+                if (isMounted) setVillageLoading(false);
             });
 
         return () => { isMounted = false; };
-    }, []);
+    }, [activeLayers, villageData, isVillageLoading]);
 
     // [OPTIMASI PURE FABRICATION]: GEOMETRIC DOWNSAMPLING 75%
     // Memangkas kerapatan kordinat masking di luar KBB agar Leaflet lancar menggambar SVG
     const kbbMaskingPolygon = useMemo(() => {
-        if (!geoJsonData || !geoJsonData.features) return null;
+        if (!maskingData || !maskingData.features) return null;
 
         const outerWorldBounds = [
             [90, -360], [90, 360], [-90, 360], [-90, -360], [90, -360]
@@ -86,7 +114,7 @@ export default function LintasMap() {
 
         const innerHoles = [];
 
-        geoJsonData.features.forEach((feature) => {
+        maskingData.features.forEach((feature) => {
             const geom = feature.geometry;
             if (!geom) return;
 
@@ -109,83 +137,104 @@ export default function LintasMap() {
             }
         });
 
+        // Struktur [Outer, Hole1, Hole2, ...] akan meredupkan bagian luar lubang
         return [outerWorldBounds, ...innerHoles];
-    }, [geoJsonData]);
+    }, [maskingData]);
 
+    // 4. RESOLUSI TILE SERVER BASEMAP (Dinamis dari Zustand)
     const tileUrl = useMemo(() => {
         switch (activeBaseMap) {
             case 'satellite':
+                // Google Satelit High-Res (Tanpa Label Jalan)
                 return 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}';
             case 'street':
-                return 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}{r}.png';
+                // OpenStreetMap Standard
+                return 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
             case 'dark':
             default:
+                // CartoDB Dark Matter (Sangat direkomendasikan untuk menyorot emisi emiter)
                 return 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
         }
     }, [activeBaseMap]);
 
-    const geoJsonStyle = useMemo(() => ({
-        color: activeBaseMap === 'dark' ? '#00e5ff' : '#2563eb',
+    // Batas gaya visual garis pembatas desa KBB
+    const geoJsonStyle = {
+        color: '#2563eb', // Royal Blue, always readable on light/dark/satellite maps
         weight: 1.2,
         fillColor: 'transparent',
         fillOpacity: 0,
         opacity: 0.35
-    }), [activeBaseMap]);
+    };
 
     return (
-        <div className="w-full h-full relative z-0 overflow-hidden bg-[#0A192F]">
+        <div className="w-full h-full relative z-0 overflow-hidden bg-slate-50">
 
-            {isGeoLoading && (
-                <div className="absolute inset-0 bg-[#0A192F]/80 flex items-center justify-center z-999">
+            {/* Indikator Loading di dasar layar jika GeoJSON belum beres di-parse */}
+            {isMaskingLoading && (
+                <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-[999]">
                     <div className="text-center space-y-4">
-                        <div class="w-10 h-10 border-4 border-[#00e5ff] border-t-transparent rounded-full animate-spin mx-auto shadow-[0_0_15px_rgba(0,229,255,0.4)]"></div>
-                        <p className="text-[10px] text-[#00e5ff] font-black uppercase tracking-[0.2em] animate-pulse">Menyiapkan Batas Spasial KBB...</p>
+                        <div className="w-10 h-10 border-4 border-[#2563eb] border-t-transparent rounded-full animate-spin mx-auto shadow-[0_0_15px_rgba(37,99,235,0.2)]"></div>
+                        <p className="text-[10px] text-[#2563eb] font-black uppercase tracking-[0.2em] animate-pulse">Menyiapkan Batas Spasial KBB...</p>
                     </div>
+                </div>
+            )}
+
+            {/* Indikator Loading khusus memuat batas desa */}
+            {isVillageLoading && (
+                <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-white/95 border border-slate-200 px-3 py-1.5 flex items-center gap-2 text-left shadow-lg z-[999] rounded">
+                    <div className="w-4 h-4 border-2 border-[#2563eb] border-t-transparent rounded-full animate-spin"></div>
+                    <span className="text-[10px] text-[#2563eb] font-bold uppercase tracking-wider">Memuat Batas Desa KBB...</span>
                 </div>
             )}
 
             <MapContainer
                 center={initialCenter}
                 zoom={initialZoom}
-                zoomControl={false}
+                zoomControl={false} // Dimatikan karena kita buat tombol zoom kustom di HUD
                 className="w-full h-full"
                 maxZoom={18}
                 minZoom={8}
             >
+                {/* 
+                    [GRASP CONTROLLER]
+                    Menyisipkan pengendali spasial independen di dalam konteks MapContainer 
+                */}
                 <MapControllers />
 
+                {/* Layer 1: Basemap */}
                 <TileLayer
                     url={tileUrl}
                     attribution='&copy; Mimika-DataHub &copy; OpenStreetMap'
                 />
 
+                {/* Layer 2: Masking luar wilayah Bandung Barat */}
                 {kbbMaskingPolygon && (
                     <Polygon
                         positions={kbbMaskingPolygon}
                         pathOptions={{
-                            color: '#000000',
-                            fillColor: '#0A192F',
-                            fillOpacity: activeBaseMap === 'dark' ? 0.75 : 0.5,
+                            color: 'transparent',
+                            fillColor: activeBaseMap === 'dark' 
+                                ? 'rgba(15,23,42,0.88)' 
+                                : activeBaseMap === 'satellite' 
+                                ? 'rgba(15,23,42,0.65)' 
+                                : 'rgba(241,245,249,0.82)',
+                            fillOpacity: 1,
                             stroke: false,
                             interactive: false
                         }}
                     />
                 )}
 
-                {/* 
-                    [OPTIMASI REACT-LEAFLET KEY]: 
-                    Gunakan key dinamis berbasis basemap aktif agar GeoJSON hanya digambar ulang 
-                    ketika warna garis dasar berubah, bukan setiap kali peta digeser!
-                */}
-                {geoJsonData && activeLayers.includes('boundaries') && (
+                {/* Layer 3: Batas Garis Administrasi Desa KBB (selalu tampil jika data tersedia) */}
+                {villageData && (
                     <GeoJSON
-                        key={`boundaries-layer-${activeBaseMap}`}
-                        data={geoJsonData}
+                        data={villageData}
                         style={geoJsonStyle}
                         interactive={false}
                     />
                 )}
 
+                {/* Layer 4: Penanda Spasial (Markers) */}
                 {activeLayers.includes('assets') && (
                     <AssetMarkers opacity={mapOpacity / 100} />
                 )}

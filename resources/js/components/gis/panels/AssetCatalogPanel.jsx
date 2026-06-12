@@ -1,7 +1,7 @@
 // resources/js/components/gis/panels/AssetCatalogPanel.jsx
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { Search, ChevronDown, FolderGit } from 'lucide-react';
+import { Search, ChevronDown, FolderGit, Lightbulb, TrafficCone, AlertTriangle, Video, Bus, MapPin } from 'lucide-react';
 
 // Store Zustand (UI dan Domain Data)
 import useGisUIStore from '../../../store/useGisUIStore';
@@ -14,34 +14,44 @@ import useLitasStore from '../../../store/useLitasStore';
  * Menyediakan antarmuka pencarian dan penelusuran aset terstruktur.
  * Mengelompokkan aset secara dinamis ke dalam rumpun kategori Dishub KBB.
  * 
- * DIOPTIMALKAN (GRASP Indirection): Komponen ini berinteraksi dengan peta Leaflet
- * secara longgar (*loosely coupled*) melalui sinyal Custom Event, menjaga 
- * siklus render React tetap bersih dan bebas dari dependensi instansi peta fisik.
+ * VIBRANT LIGHT THEME: bg-white, border-slate-200/80, text-slate-700.
  */
 
 // Konfigurasi visual statis untuk Rumpun Kategori Utama Dishub KBB (Information Expert)
 const CATEGORY_META = {
-    'Penerangan Jalan Umum (PJU)': { emoji: '💡', color: '#fbbf24' },
-    'Perlengkapan Jalan': { emoji: '🚦', color: '#f59e0b' },
-    'Fasilitas Lalu Lintas': { emoji: '🚧', color: '#3b82f6' },
-    'Pengendalian & Pengawasan': { emoji: '📹', color: '#00e5ff' },
-    'Prasarana Transportasi': { emoji: '🚌', color: '#16a34a' }
+    'Penerangan Jalan Umum (PJU)': { icon: Lightbulb, color: '#fbbf24' },
+    'Penerangan Jalan Umum (PJU) (5)': { icon: Lightbulb, color: '#fbbf24' },
+    'Perlengkapan Jalan': { icon: TrafficCone, color: '#f59e0b' },
+    'Perlengkapan Jalan (4)': { icon: TrafficCone, color: '#f59e0b' },
+    'Fasilitas Lalu Lintas': { icon: AlertTriangle, color: '#3b82f6' },
+    'Fasilitas Lalu Lintas (5)': { icon: AlertTriangle, color: '#3b82f6' },
+    'Pengendalian & Pengawasan': { icon: Video, color: '#00e5ff' },
+    'Pengendalian & Pengawasan (4)': { icon: Video, color: '#00e5ff' },
+    'Prasarana Transportasi': { icon: Bus, color: '#16a34a' },
+    'Prasarana Transportasi (2)': { icon: Bus, color: '#16a34a' }
 };
 
 export default function AssetCatalogPanel() {
-    const { assets, fetchAssets, isAssetsLoading } = useLitasStore();
-    const { openPanel, closePanelsToTheRight, setSelectedAssetId, selectedAssetId } = useGisUIStore();
+    const catalogAssets = useLitasStore((state) => state.catalogAssets);
+    const fetchAssets = useLitasStore((state) => state.fetchAssets);
+    const isAssetsLoading = useLitasStore((state) => state.isAssetsLoading);
+
+    const openPanel = useGisUIStore((state) => state.openPanel);
+    const closePanelsToTheRight = useGisUIStore((state) => state.closePanelsToTheRight);
+    const setSelectedAssetId = useGisUIStore((state) => state.setSelectedAssetId);
+    const selectedAssetId = useGisUIStore((state) => state.selectedAssetId);
 
     const [searchQuery, setSearchQuery] = useState('');
     const [expandedCategory, setExpandedCategory] = useState(null);
+    const [visibleCounts, setVisibleCounts] = useState({});
 
-    // Auto-hydrate data secara global jika penyimpanan lokal masih kosong saat laci dibuka
+    // Auto-hydrate data secara global jika katalog masih kosong saat laci dibuka
     useEffect(() => {
-        if (assets.length === 0 && !isAssetsLoading) {
-            // Memanggil fetchAssets tanpa argumen memicu pemuatan global untuk kebutuhan pencarian katalog
+        if (catalogAssets.length === 0 && !isAssetsLoading) {
+            // Panggilan tanpa bounds → mengisi catalogAssets global (tidak merusak mapAssets)
             fetchAssets();
         }
-    }, [assets.length, isAssetsLoading, fetchAssets]);
+    }, [catalogAssets.length, isAssetsLoading, fetchAssets]);
 
     // 1. FILTER & GROUPING DATA REAL-TIME O(N)
     const groupedAndFilteredAssets = useMemo(() => {
@@ -49,10 +59,9 @@ export default function AssetCatalogPanel() {
         const query = searchQuery.toLowerCase().trim();
 
         // Saring elemen klaster spasial tingkat DB agar tidak tampil di katalog pencarian teks
-        const individualAssets = assets.filter(item => !item.is_cluster);
+        const individualAssets = catalogAssets.filter(item => !item.is_cluster);
 
         individualAssets.forEach(asset => {
-            // Logika pencarian fuzzy (Nama, ID Aset, Alamat, atau Jenis Spesifik)
             const matchesQuery = !query ||
                 asset.nama.toLowerCase().includes(query) ||
                 asset.id_asset.toLowerCase().includes(query) ||
@@ -67,7 +76,7 @@ export default function AssetCatalogPanel() {
         });
 
         return groups;
-    }, [assets, searchQuery]);
+    }, [catalogAssets, searchQuery]);
 
     // Set akordion pertama terbuka otomatis jika hasil pencarian diketik oleh pengguna
     useEffect(() => {
@@ -78,34 +87,21 @@ export default function AssetCatalogPanel() {
     }, [searchQuery, groupedAndFilteredAssets]);
 
     const handleAssetClick = (asset) => {
-        const latVal = parseFloat(asset.lat);
-        const lngVal = parseFloat(asset.lng);
-
-        if (isNaN(latVal) || isNaN(lngVal)) {
-            console.warn('[AssetCatalogPanel] Koordinat aset tidak valid:', asset);
-            return;
-        }
-
-        // 1. Menerbangkan kamera peta menggunakan pesan sinyal terisolasi (GRASP Indirection)
-        window.dispatchEvent(new CustomEvent('map-fly-to-coords', {
-            detail: { lat: latVal, lng: lngVal, zoom: 16 }
-        }));
-
-        // 2. Tandai ID aset terpilih di dalam penyimpanan keadaan visual
+        // 1. Tandai ID aset terpilih di dalam penyimpanan keadaan visual
         setSelectedAssetId(asset.id);
 
-        // 3. Bersihkan tumpukan laci melayang sebelah kanan
+        // 2. Bersihkan tumpukan laci melayang sebelah kanan
         closePanelsToTheRight(-1);
 
-        // 4. Tampilkan panel rincian spesifik aset
+        // 3. Tampilkan panel rincian spesifik aset
         openPanel('detil-aset', `Detail Aset: ${asset.id_asset}`, asset);
     };
 
     return (
-        <div className="flex flex-col h-full bg-white pb-6 font-sans text-slate-800 text-left">
+        <div className="flex flex-col h-full bg-white pb-6 font-sans text-slate-700 text-left">
 
             {/* SEARCH BAR (Sticky Header) */}
-            <div className="px-4 py-2.5 border-b border-slate-200 bg-slate-50 sticky top-0 z-10">
+            <div className="px-4 py-2.5 border-b border-slate-200 bg-slate-50/80 sticky top-0 z-10 backdrop-blur-sm">
                 <div className="relative group">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#2563eb]" size={14} />
                     <input
@@ -123,33 +119,35 @@ export default function AssetCatalogPanel() {
                 {isAssetsLoading ? (
                     <div className="p-8 text-center space-y-3">
                         <div className="w-8 h-8 border-4 border-[#2563eb] border-t-transparent rounded-full animate-spin mx-auto"></div>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Memuat Database PostgreSQL...</p>
+                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Memuat Database PostgreSQL...</p>
                     </div>
                 ) : Object.keys(groupedAndFilteredAssets).length > 0 ? (
                     Object.keys(groupedAndFilteredAssets).map((catName) => {
                         const isExpanded = expandedCategory === catName;
                         const catAssets = groupedAndFilteredAssets[catName] || [];
-                        const meta = CATEGORY_META[catName] || { emoji: '📍', color: '#64748b' };
+                        const meta = CATEGORY_META[catName] || { icon: MapPin, color: '#64748b' };
 
                         return (
-                            <div key={catName} className="flex flex-col border-b border-slate-100">
+                            <div key={catName} className="flex flex-col border-b border-slate-200/80">
 
                                 {/* Akordion Header */}
                                 <button
                                     onClick={() => setExpandedCategory(isExpanded ? null : catName)}
-                                    className="flex items-center justify-between px-4 py-3 bg-slate-50 hover:bg-slate-100/60 border-b border-slate-100 transition-colors w-full text-left rounded-none outline-none"
+                                    className="flex items-center justify-between px-4 py-3 bg-slate-50 hover:bg-slate-100/80 border-b border-slate-200/80 transition-colors w-full text-left rounded-none outline-none"
                                 >
                                     <div className="flex items-center gap-2 min-w-0">
                                         <ChevronDown
                                             size={14}
                                             className={`text-slate-400 shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
                                         />
-                                        <span className="text-sm shrink-0">{meta.emoji}</span>
-                                        <span className="text-[11px] font-black uppercase text-slate-700 truncate tracking-wide">
+                                        <span className="shrink-0 flex items-center justify-center w-5 h-5 rounded bg-slate-100 border border-slate-200/60">
+                                            <meta.icon size={12} style={{ color: meta.color }} />
+                                        </span>
+                                        <span className="text-[11px] font-black uppercase text-slate-600 truncate tracking-wide">
                                             {catName}
                                         </span>
                                     </div>
-                                    <span className="bg-slate-200 text-slate-600 font-mono text-[9px] font-black px-1.5 py-0.5 rounded-sm shadow-inner shrink-0">
+                                    <span className="bg-slate-200/60 text-slate-600 font-mono text-[9px] font-black px-1.5 py-0.5 rounded-sm shadow-inner shrink-0 border border-slate-300/50">
                                         {catAssets.length}
                                     </span>
                                 </button>
@@ -157,7 +155,7 @@ export default function AssetCatalogPanel() {
                                 {/* List Aset di dalam Rumpun Kategori */}
                                 {isExpanded && (
                                     <div className="flex flex-col bg-white animate-in slide-in-from-top-1 duration-150">
-                                        {catAssets.map((asset) => {
+                                        {catAssets.slice(0, visibleCounts[catName] || 30).map((asset) => {
                                             const isSelected = selectedAssetId === asset.id;
                                             return (
                                                 <button
@@ -167,12 +165,12 @@ export default function AssetCatalogPanel() {
                                                         ${isSelected ? 'bg-[#2563eb]/5 border-l-[#2563eb]' : 'border-l-transparent'}`}
                                                 >
                                                     {/* Penanda warna kondisi dinamis */}
-                                                    <span className="w-2.5 h-2.5 rounded-full shrink-0 shadow-inner border border-white" style={{
-                                                        backgroundColor: asset.status === 'Baik' ? '#16a34a' : asset.status === 'Rusak' ? '#fbbf24' : '#dc2626'
+                                                    <span className="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm border border-white" style={{
+                                                        backgroundColor: asset.status === 'Baik' ? '#10b981' : asset.status === 'Rusak' ? '#f59e0b' : '#dc2626'
                                                     }}></span>
 
                                                     <div className="flex flex-col leading-none min-w-0">
-                                                        <span className={`text-[11px] leading-tight truncate ${isSelected ? 'font-bold text-[#2563eb]' : 'font-semibold text-slate-800'}`}>
+                                                        <span className={`text-[11px] leading-tight truncate ${isSelected ? 'font-bold text-[#2563eb]' : 'font-semibold text-slate-700'}`}>
                                                             {asset.nama}
                                                         </span>
                                                         <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wide mt-1">
@@ -182,6 +180,19 @@ export default function AssetCatalogPanel() {
                                                 </button>
                                             );
                                         })}
+                                        {catAssets.length > (visibleCounts[catName] || 30) && (
+                                            <button
+                                                onClick={() => {
+                                                    setVisibleCounts(prev => ({
+                                                        ...prev,
+                                                        [catName]: (prev[catName] || 30) + 50
+                                                    }));
+                                                }}
+                                                className="w-full py-2 bg-slate-50 border-t border-slate-100 hover:bg-slate-100/80 text-[10px] font-black text-[#2563eb] tracking-widest uppercase transition-colors outline-none cursor-pointer text-center"
+                                            >
+                                                Muat Lebih Banyak ({catAssets.length - (visibleCounts[catName] || 30)} Tersisa)
+                                            </button>
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -189,8 +200,8 @@ export default function AssetCatalogPanel() {
                     })
                 ) : (
                     <div className="p-8 text-center text-slate-400 space-y-2">
-                        <FolderGit className="mx-auto text-slate-350" size={24} />
-                        <p className="text-[10px] font-black uppercase tracking-wider">Aset tidak ditemukan</p>
+                        <FolderGit className="mx-auto text-slate-300" size={24} />
+                        <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Aset tidak ditemukan</p>
                     </div>
                 )}
             </div>

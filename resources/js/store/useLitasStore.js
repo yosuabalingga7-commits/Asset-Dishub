@@ -8,50 +8,75 @@ import { spatialService } from '../services/spatialService';
  * useLitasStore (Information Expert - Domain & Spatial Caching)
  * ============================================================================
  * Mengelola aliran data mentah spasial dan bisnis dari Laravel Backend.
- * Memiliki mekanisme Caching Spasial cerdas di tingkat klien untuk menghemat 
- * pemanggilan API geofencing berulang saat peta digeser tipis oleh kursor.
+ *
+ * STATE ARCHITECTURE — DECOUPLED (FIX: State Coupling Bug)
+ * ─────────────────────────────────────────────────────────
+ * catalogAssets : Seluruh aset global untuk katalog pencarian panel kiri.
+ *                 Hanya diisi oleh panggilan fetchAssets() TANPA bounds.
+ *                 Tidak pernah ditimpa oleh pergeseran kamera peta.
+ *
+ * mapAssets     : Aset terfilter viewport aktif untuk rendering marker peta.
+ *                 Diperbarui dinamis oleh panggilan fetchAssets(bounds, zoom).
+ *
+ * Dengan pemisahan ini, menggeser kamera peta (yang memicu fetchAssets(bounds))
+ * tidak akan lagi mengosongkan daftar aset di panel katalog (AssetCatalogPanel).
  */
 
 const useLitasStore = create((set, get) => ({
     // --- STATE DATA ---
-    assets: [],                    // Seluruh data master aset fisik teraktif
-    recentReports: [],             // Laporan masyarakat & petugas terbaru
-    priorityAssets: [],            // Daftar aset rusak kritis (prioritas tindak lanjut)
-    reportStats: null,             // Statistik dashboard (Masyarakat vs Petugas)
-    reportTrend: null,             // Data grafik tren pengaduan 7 hari
+    catalogAssets: [],          // Seluruh data aset global (untuk panel Katalog)
+    mapAssets: [],              // Data aset terfilter viewport (untuk AssetMarkers)
+    recentReports: [],          // Laporan masyarakat & petugas terbaru
+    priorityAssets: [],         // Daftar aset rusak kritis (prioritas tindak lanjut)
+    reportStats: null,          // Statistik dashboard (Masyarakat vs Petugas)
+    reportTrend: null,          // Data grafik tren pengaduan 7 hari
 
     // --- LOADING STATES ---
     isAssetsLoading: false,
+    isMapAssetsLoading: false,
     isReportsLoading: false,
     isStatsLoading: false,
 
     // --- SPATIAL CACHE STORAGE (Pure Fabrication) ---
-    nearestAssets: [],             // Hasil deteksi aset terdekat (untuk form laporan)
+    nearestAssets: [],          // Hasil deteksi aset terdekat (untuk form laporan)
     isNearestLoading: false,
-    nearestCache: {},              // Cache spasial lokal sensor geofencing ("lat_lng_radius")
-    viewportCache: {},             // Cache spasial lokal untuk simpan hasil filter BBOX ("minLat_minLng_maxLat_maxLng_zoom")
+    nearestCache: {},           // Cache spasial lokal sensor geofencing ("lat_lng_radius")
+    viewportCache: {},          // Cache spasial lokal untuk simpan hasil filter BBOX
 
     // --- ACTIONS: DATA FETCHERS & CACHE INTEGRATION ---
 
     /**
-     * Memuat aset spasial KBB dengan optimasi parameter viewport (BBOX).
-     * Jika bounds dikirim, pengecekan cache lokal dijalankan sebelum memanggil API.
+     * Memuat data aset dengan dua mode berdasarkan ada/tidaknya bounds:
+     *
+     * Mode A — Global Hydration (bounds = null):
+     *   Memuat SELURUH aset tanpa filter viewport.
+     *   Hasilnya disimpan ke `catalogAssets` (tidak menyentuh `mapAssets`).
+     *   Digunakan saat: bootstrap aplikasi, buka panel katalog.
+     *
+     * Mode B — Viewport-Based Rendering (bounds diberikan):
+     *   Memuat aset terfilter oleh BBOX viewport peta aktif.
+     *   Hasilnya disimpan ke `mapAssets` (tidak menyentuh `catalogAssets`).
+     *   Digunakan saat: peta digeser atau di-zoom.
      */
     fetchAssets: async (bounds = null, zoom = null) => {
-        // Kasus 1: Panggilan global tanpa pembatas viewport (Standard Hydration)
+        // ── MODE A: Global Hydration (untuk Katalog Panel) ──
         if (!bounds) {
+            // Jangan re-fetch jika katalog sudah terisi dan tidak ada flag loading
+            if (get().catalogAssets.length > 0 && !get().isAssetsLoading) {
+                return;
+            }
             set({ isAssetsLoading: true });
             try {
                 const data = await spatialService.fetchAllAssets();
-                set({ assets: data || [], isAssetsLoading: false });
+                set({ catalogAssets: data || [], isAssetsLoading: false });
             } catch (error) {
                 set({ isAssetsLoading: false });
-                console.error('[LitasStore] Gagal meng-hydrate data aset:', error);
+                console.error('[LitasStore] Gagal meng-hydrate data katalog aset:', error);
             }
             return;
         }
 
-        // Kasus 2: Viewport-Based Rendering dengan Geotag-Caching
+        // ── MODE B: Viewport-Based Rendering (untuk AssetMarkers) ──
         // Presisi 3 desimal (~111 meter toleransi geser) untuk efisiensi buffering kursor
         const roundedMinLat = bounds.minLat.toFixed(3);
         const roundedMinLng = bounds.minLng.toFixed(3);
@@ -63,24 +88,24 @@ const useLitasStore = create((set, get) => ({
 
         // HIT CACHE: Muat data dari memori browser lokal
         if (state.viewportCache[cacheKey]) {
-            set({ assets: state.viewportCache[cacheKey] });
+            set({ mapAssets: state.viewportCache[cacheKey] });
             return;
         }
 
         // MISS CACHE: Tarik data spasial terkompresi dari database PostGIS
-        set({ isAssetsLoading: true });
+        set({ isMapAssetsLoading: true });
         try {
             const data = await spatialService.fetchAllAssets(bounds, zoom);
             set((state) => ({
-                assets: data || [],
-                isAssetsLoading: false,
+                mapAssets: data || [],
+                isMapAssetsLoading: false,
                 viewportCache: {
                     ...state.viewportCache,
                     [cacheKey]: data || []
                 }
             }));
         } catch (error) {
-            set({ isAssetsLoading: false });
+            set({ isMapAssetsLoading: false });
             console.error('[LitasStore] Gagal menyaring data aset spasial:', error);
         }
     },
@@ -182,7 +207,8 @@ const useLitasStore = create((set, get) => ({
     clearLitasCache: () => set({
         nearestCache: {},
         viewportCache: {},
-        nearestAssets: []
+        nearestAssets: [],
+        mapAssets: []
     })
 }));
 

@@ -1,11 +1,19 @@
-// resources/js/components/gis/MapControllers.jsx
-
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useMap, useMapEvents } from 'react-leaflet';
 
 // Store Zustand untuk sinkronisasi koordinat & zoom
 import useGisUIStore from '../../store/useGisUIStore';
 import useLitasStore from '../../store/useLitasStore';
+
+// Simple debounce utility for high frequency events
+function debounce(func, wait) {
+    let timeout;
+    return function (...args) {
+        const context = this;
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(context, args), wait);
+    };
+}
 
 /**
  * ============================================================================
@@ -54,10 +62,9 @@ export default function MapControllers() {
         };
     }, [map]);
 
-    // 2. SINKRONISASI LEAFLET TO ZUSTAND STORE (BBOX & Zoom Tracking)
-    useMapEvents({
-        // Terjadi saat peta selesai digeser (drag/pan) atau di-zoom oleh pengguna
-        moveend: () => {
+    // 2. SINKRONISASI LEAFLET TO ZUSTAND STORE (BBOX & Zoom Tracking - DEBOUNCED)
+    const handleMapMoveEnd = useMemo(() => {
+        return debounce(() => {
             const center = map.getCenter();
             const zoom = map.getZoom();
             const bounds = map.getBounds();
@@ -77,7 +84,12 @@ export default function MapControllers() {
 
             // Trigger pemuatan data baru berbasis BBOX viewport terkini
             useLitasStore.getState().fetchAssets(serializableBounds, zoom);
-        }
+        }, 300);
+    }, [map]);
+
+    useMapEvents({
+        // Terjadi saat peta selesai digeser (drag/pan) atau di-zoom oleh pengguna
+        moveend: handleMapMoveEnd
     });
 
     // 3. JEMBATAN INSTRUKSI IMPERATIF (Indirection / Controller)
@@ -92,34 +104,21 @@ export default function MapControllers() {
             map.zoomOut();
         };
 
-        // Event C: Perintah mengembalikan peta ke titik fokus KBB
+        // Event C: Perintah mengembalikan peta ke titik fokus KBB (instant, no lag)
         const handleResetView = () => {
-            map.setView([-6.8431, 107.4912], 11, { animate: true, duration: 1.2 });
-        };
-
-        // Event D: Perintah terbang ke koordinat tertentu (contoh: Saat mengklik baris list aset)
-        const handleFlyToCoords = (e) => {
-            const { lat, lng, zoom } = e.detail;
-            if (lat && lng) {
-                map.flyTo([lat, lng], zoom || 16, {
-                    animate: true,
-                    duration: 1.5 // Efek sinematik meluncur 1.5 detik
-                });
-            }
+            map.setView([-6.8431, 107.4912], 11, { animate: false });
         };
 
         // Daftarkan seluruh pendengar event ke global window object
         window.addEventListener('map-zoom-in', handleZoomIn);
         window.addEventListener('map-zoom-out', handleZoomOut);
         window.addEventListener('map-reset-view', handleResetView);
-        window.addEventListener('map-fly-to-coords', handleFlyToCoords);
 
         // Bersihkan seluruh listener saat komponen unmount untuk mencegah kebocoran memori
         return () => {
             window.removeEventListener('map-zoom-in', handleZoomIn);
             window.removeEventListener('map-zoom-out', handleZoomOut);
             window.removeEventListener('map-reset-view', handleResetView);
-            window.removeEventListener('map-fly-to-coords', handleFlyToCoords);
         };
     }, [map]);
 

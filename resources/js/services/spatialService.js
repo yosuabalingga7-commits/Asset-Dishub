@@ -99,7 +99,7 @@ export const spatialService = {
     /**
      * MENCARI ASET TERDEKAT DARI TITIK KOORDINAT (GEOFENCING RADIUS)
      * Digunakan untuk fitur deteksi aset otomatis saat user menunjuk lokasi peta.
-     * Perhatikan endpoint-nya bukan /api, tapi /laporan/aset-terdekat.
+     * Menggunakan API V1 /v1/assets/nearest.
      * 
      * @param {number} lat - Latitude
      * @param {number} lng - Longitude
@@ -107,16 +107,49 @@ export const spatialService = {
      */
     fetchNearestAssets: async (lat, lng, radius = 100) => {
         try {
-            // Karena endpoint dari LaporanController bukan ber-prefix /api,
-            // kita pakai standard axios dengan interceptor manual jika perlu,
-            // atau cukup axios get standar (disesuaikan dengan route web.php).
-            const response = await axios.get(`/laporan/aset-terdekat`, {
-                params: { lat, lng, radius },
-                headers: { 'Accept': 'application/json' }
+            return await api.get('/v1/assets/nearest', {
+                params: { lat, lng, radius }
             });
-            return response.data;
         } catch (error) {
             console.error('[SpatialService] Gagal mendeteksi aset terdekat:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * MENGIRIM LAPORAN KERUSAKAN DARI CITIZEN/MASYARAKAT
+     * Mengirim data multipart/form-data (data form + file foto).
+     * 
+     * @param {FormData} formData - Payload data form
+     */
+    submitPublicReport: async (formData) => {
+        try {
+            return await api.post('/v1/reports/public', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+        } catch (error) {
+            console.error('[SpatialService] Gagal mengirim laporan publik:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * MENGIRIM LAPORAN KERUSAKAN/MAINTENANCE DARI PETUGAS LAPANGAN
+     * Mengirim data multipart/form-data (data form + file foto).
+     * 
+     * @param {FormData} formData - Payload data form
+     */
+    submitOfficerReport: async (formData) => {
+        try {
+            return await api.post('/v1/reports/officer', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+        } catch (error) {
+            console.error('[SpatialService] Gagal mengirim laporan petugas:', error);
             throw error;
         }
     }

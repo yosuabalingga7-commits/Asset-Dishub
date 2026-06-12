@@ -8,45 +8,48 @@ use Illuminate\Support\Facades\Auth;
 
 class LoginController extends Controller
 {
-    public function showLogin()
-    {
-        return view('auth.login');
-    }
-
-    public function login(Request $request)
+    /**
+     * Handle an incoming authentication request.
+     */
+    public function apiLogin(Request $request)
     {
         $credentials = $request->validate([
-            'nip'      => 'required',
-            'password' => 'required',
+            'nip' => ['required', 'string'],
+            'password' => ['required'],
         ]);
 
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
 
-            // Logika Redirect Berdasarkan Role
-            $user = Auth::user();
-            if ($user->role === 'kadis') {
-                return redirect()->intended(route('kadis.dashboard'));
-            }
-            if ($user->role === 'seksi') {
-                return redirect()->intended(route('petugas.tersedia'));
-            }
-            if ($user->role === 'petugas_lapangan') {
-                return redirect()->intended(route('petugas.lapangan.dashboard'));
-            }
-            return redirect()->intended(route('admin.dashboard'));
+            return response()->json([
+                'message' => 'Authenticated successfully',
+                'user' => Auth::user(),
+            ]);
         }
 
-        return back()->withErrors([
-            'nip' => 'NIP atau Password salah.',
-        ])->withInput($request->only('nip'));
+        return response()->json([
+            'message' => 'Kredensial yang diberikan tidak cocok dengan data kami.',
+        ], 401);
     }
 
-    public function logout(Request $request)
+    /**
+     * Destroy an authenticated session.
+     */
+    public function apiLogout(Request $request)
     {
-        Auth::logout();
+        Auth::guard('web')->logout();
+
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-        return redirect('/');
+
+        return response()->json(['message' => 'Logged out successfully']);
+    }
+
+    /**
+     * Get the authenticated user.
+     */
+    public function me(Request $request)
+    {
+        return response()->json($request->user());
     }
 }
